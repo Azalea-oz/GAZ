@@ -1,5 +1,4 @@
-#ifndef AZALEA__HPP
-#define AZALEA__HPP
+#pragma once
 
 #include<windows.h>
 #include<gdiplus.h>

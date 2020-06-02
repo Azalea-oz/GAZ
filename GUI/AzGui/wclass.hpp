@@ -1,5 +1,4 @@
-#ifndef __WINDOWCLASS_HPP__
-#define __WINDOWCLASS_HPP__
+#pragma once
 
 #include<windows.h>
 #include<array>

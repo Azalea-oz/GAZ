@@ -1,5 +1,4 @@
-#ifndef _EVENT_HPP_
-#define _EVENT_HPP_
+#pragma once
 
 #include"../AAAZLE.hpp"
 

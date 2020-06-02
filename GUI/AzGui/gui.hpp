@@ -1,5 +1,4 @@
-#ifndef __GUI_HPP__
-#define __GUI_HPP__
+#pragma once
 
 #include<windows.h>
 #include<gdiplus.h>

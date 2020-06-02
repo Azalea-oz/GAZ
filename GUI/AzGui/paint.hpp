@@ -1,5 +1,4 @@
-#ifndef _PAINT_HPP_
-#define _PAINT_HPP_
+#pragma once
 
 #include<gdiplus.h>
 #include"../SINGLETON/singleton.hpp"
