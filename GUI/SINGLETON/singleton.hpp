@@ -1,3 +1,5 @@
+#pragma once
+
 namespace SINGLETON{
 	
 	template<class U>
