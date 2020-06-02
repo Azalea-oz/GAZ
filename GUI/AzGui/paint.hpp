@@ -25,5 +25,3 @@ namespace AZ{
 		}
 	}
 }
-
-#endif

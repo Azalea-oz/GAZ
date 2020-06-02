@@ -1,5 +1,4 @@
-#ifndef __DEBUG_HPP__
-#define __DEBUG_HPP__
+#pragma once
 
 #include<windows.h>
 #include<ios>
@@ -50,5 +49,3 @@ namespace DEBUG{
 namespace Time{
 	void NowTime();
 }
-
-#endif

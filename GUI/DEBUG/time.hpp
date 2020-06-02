@@ -1,5 +1,4 @@
-#ifndef __DEBUG_TIME_HPP__
-#define __DEBUG_TIME_HPP__
+#pragma once
 
 #include<iostream>
 #include<ctime>
@@ -8,4 +7,3 @@
 namespace Time{
 	void NowTime();
 }
-#endif

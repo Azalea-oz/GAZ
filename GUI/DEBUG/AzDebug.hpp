@@ -1,7 +1,4 @@
-#ifndef __AZDEBUG_H__
-#define __AZDEBUG_H__
+#pragma once
 
 #include"debug.hpp"
 //#include"debug.cpp"
-
-#endif

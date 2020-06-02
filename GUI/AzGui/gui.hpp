@@ -175,5 +175,3 @@ namespace AZ{
 		};
 	}
 }
-
-#endif

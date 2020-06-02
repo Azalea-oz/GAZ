@@ -7,5 +7,3 @@ namespace AZ{
 		using CODE = int;
 	}
 }
-
-#endif

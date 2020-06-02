@@ -1,5 +1,4 @@
-#ifndef __DOS_COLOR_HPP__
-#define __DOS_COLOR_HPP__
+#pragma once
 
 #define FOREGROUND_BLACK_L     0x0000
 #define FOREGROUND_BLUE_L      0x0001
@@ -45,5 +44,3 @@
 #define BACKGROUND_BLACK       0x0000
 #define BACKGROUND_WHITE       0x0070
 
-
-#endif
