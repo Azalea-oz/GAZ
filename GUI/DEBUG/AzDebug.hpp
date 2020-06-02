@@ -2,6 +2,6 @@
 #define __AZDEBUG_H__
 
 #include"debug.hpp"
-#include"debug.cpp"
+//#include"debug.cpp"
 
 #endif

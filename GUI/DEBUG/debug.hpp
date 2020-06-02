@@ -6,33 +6,33 @@
 #include<iomanip>
 #include<iostream>
 #include<cstdio>
+#include<ctime>
+#include<chrono>
+
 #include"dos_color.hpp"
-#include"../Time/AzTime.hpp"
 #include"../SINGLETON/singleton.hpp"
 
+#define DLL_EXPORT  __attribute__((visibility ("default")))
+
 namespace DEBUG{
-	void error_dialog(HWND);
-	BOOL WINAPI HandlerRoutine(DWORD);
+	DLL_EXPORT void error_dialog(HWND);
+	DLL_EXPORT BOOL WINAPI HandlerRoutine(DWORD);
 	template<typename T>
 	constexpr void DLog(T);
 	
-	
-	
-	
-	void DebugLogLine();
-	
-	class DebugConsole : public SINGLETON::Singleton<DebugConsole>{
-		HMENU menu;
+	class DLL_EXPORT DebugConsole : public SINGLETON::Singleton<DebugConsole>{
 		HANDLE hout;
 		bool DEBUG_TIME;
 		int Debug_Line;
-		
+		bool UseFlag;
 		void DebugLogLine();
 	public:
 		DebugConsole();
 		~DebugConsole();
 		void SetAttr(WORD);
 		void UseTime();
+		void UseDebug(bool);
+		void Init();
 		
 		template<typename T>
 		void Log(T x);
@@ -44,6 +44,11 @@ namespace DEBUG{
 	
 	
 	
+}
+
+
+namespace Time{
+	void NowTime();
 }
 
 #endif
