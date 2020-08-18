@@ -8,6 +8,7 @@
 #include<cstdio>
 #include<ctime>
 #include<chrono>
+#include<string>
 
 #include"dos_color.hpp"
 #include"../SINGLETON/singleton.hpp"
@@ -15,12 +16,12 @@
 #define DLL_EXPORT  __attribute__((visibility ("default")))
 
 namespace DEBUG{
-	DLL_EXPORT void error_dialog(HWND);
-	DLL_EXPORT BOOL WINAPI HandlerRoutine(DWORD);
+	void error_dialog(HWND);
+	BOOL WINAPI HandlerRoutine(DWORD);
 	template<typename T>
 	constexpr void DLog(T);
 	
-	class DLL_EXPORT DebugConsole : public SINGLETON::Singleton<DebugConsole>{
+	class DebugConsole : public SINGLETON::Singleton<DebugConsole>{
 		HANDLE hout;
 		bool DEBUG_TIME;
 		int Debug_Line;
@@ -36,6 +37,7 @@ namespace DEBUG{
 		
 		template<typename T>
 		void Log(T x);
+		
 		
 		template<typename T>
 		void CmdLog(T cmd, T msg);
