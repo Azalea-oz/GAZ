@@ -1,4 +1,5 @@
-#pragma once
+#ifndef __GUI_HPP__
+#define __GUI_HPP__
 
 #include<windows.h>
 #include<gdiplus.h>
@@ -9,11 +10,13 @@
 #include<cstdio>
 #include<array>
 #include<map>
+#include<functional>
 
 #include"../DEBUG/AzDebug.hpp"
-#include"defines.cpp"
-#include"wclass.hpp"
-#include"paint.hpp"
+#include"../defines.hpp"
+#include"../WCLASS/wclass.hpp"
+#include"../PAINT/paint.hpp"
+#include"../EVENT/event.hpp"
 
 #define WINDOW_CHILD 0xffff
 
@@ -22,6 +25,7 @@
 
 namespace AZ{
 	namespace GUI{
+		typedef int CODE;
 		
 		class WINDOW;
 		
@@ -38,6 +42,7 @@ namespace AZ{
 		
 		class WINDOW : protected STATE{
 			WNDCLASSEX wcex;
+			WNDCLASSEXW wcexw;
 			static WINDOW* tmp;
 			
 			UINT cbSize;
@@ -51,14 +56,17 @@ namespace AZ{
 			HCURSOR hCursor;
 			HBRUSH hbrBackground;
 			std::string lpszMenuName;
+			std::wstring lpszMenuNameW;
 			std::string lpszClassName;
+			std::wstring lpszClassNameW;
 			
-			
+			static bool UnicodeMode;
 			
 			//function pointer
 			using WPROC = LRESULT (WINDOW::*)(HWND, UINT, WPARAM, LPARAM);
 			WPROC Proc;
 			static LRESULT CALLBACK EntryProc(HWND, UINT, WPARAM, LPARAM);
+			static LRESULT CALLBACK EntryProcW(HWND, UINT, WPARAM, LPARAM);
 			
 		public:
 			WINDOW& WClassSize(const UINT);
@@ -72,20 +80,30 @@ namespace AZ{
 			WINDOW& WClassCursor(HCURSOR);
 			WINDOW& WClassBackground(const HBRUSH);
 			WINDOW& WClassMenuName(const std::string);
+			WINDOW& WClassMenuName(const std::wstring);
 			WINDOW& WClassName(const std::string);
+			WINDOW& WClassName(const std::wstring);
 			
-			std::string GetClassName();
+			std::string GetClassNameA();
+			std::wstring GetClassNameW();
+			
 			WINDOW& Register();
 			
 			LRESULT MyProc(HWND, UINT, WPARAM, LPARAM);
+			static void UseUnicode(bool);
+			static bool isUnicode();
+			
+			
+			
 			
 		protected:
 			const WNDCLASSEX GetWcex();
-		
-		
-		
+			
+			
+			
 		protected:
 			std::string WTitle;
+			std::wstring WTitleW;
 			DWORD ExStyle;
 			DWORD WStyle;
 			
@@ -95,28 +113,35 @@ namespace AZ{
 			HINSTANCE hinst;
 			HMENU Menu;
 			
-			std::vector<WINDOW*> ChildWindow;
-			
-			
+			std::vector<std::pair<HMENU, WINDOW*> > ChildWindow;
+			bool Border;
 		public:
 			WINDOW();
 			WINDOW(const int, const int);
 			WINDOW(const int, const int, const std::string);
+			WINDOW(const int, const int, const std::wstring);
 			WINDOW(const std::string);
+			WINDOW(const std::wstring);
 			virtual ~WINDOW();
 			
 			WINDOW& WindowExStyle(const DWORD);
 			WINDOW& WindowStyle(const DWORD);
 			WINDOW& WindowTitle(const std::string);
+			WINDOW& WindowTitle(const std::wstring);
 			WINDOW& WindowSize(const int, const int);
 			WINDOW& WindowPos(const int, const int);
+			WINDOW& Borderless();
 			
-			std::string GetTitleName();
+			std::string GetTitleNameA();
+			std::wstring GetTitleNameW();
+			
+			HINSTANCE GetInst();
 			
 			void ResizeClient();
 			
 			void Create();
 			void Create(const std::string);
+			void Create(const std::wstring);
 			
 			void Child(WINDOW&, const HMENU);
 			void SetMenu(const HMENU);
@@ -128,8 +153,9 @@ namespace AZ{
 			
 			int Message();
 			void Show(int);
-		protected:
+			
 			HWND GetHandle();
+		protected:
 			void SetHandle(HWND);
 			void SetParentHandle(HWND);
 			
@@ -140,12 +166,11 @@ namespace AZ{
 			void InitCodeArray();
 		protected:
 			
-			using CODE = int;
+			
 			void ESetProc();
 			std::array<CODE (WINDOW::*)(const HWND, const UINT, const WPARAM, const LPARAM), 24> CodeFuncArray;
 			
 			virtual CODE ECREATE(const HWND, const UINT, const WPARAM, const LPARAM);
-			virtual CODE EPAINT(const HWND, const UINT, const WPARAM, const LPARAM);
 			virtual CODE ECLOSE(const HWND, const UINT, const WPARAM, const LPARAM);
 			virtual CODE EDESTROY(const HWND, const UINT, const WPARAM, const LPARAM);
 			virtual CODE ECOMMAND(const HWND, const UINT, const WPARAM, const LPARAM);
@@ -170,8 +195,21 @@ namespace AZ{
 			virtual CODE ESTATE(const HWND, const UINT, const WPARAM, const LPARAM);
 			LRESULT CALLBACK EBack(const HWND, const UINT, const WPARAM, const LPARAM);
 			
+			virtual CODE UNIQMSG(const HWND, const UINT, const WPARAM, const LPARAM);
+			virtual CODE EVENT(const HWND, const UINT, const WPARAM, const LPARAM);
+			
+			CODE _EPAINT(const HWND, const UINT, const WPARAM, const LPARAM);
+			virtual CODE EPAINT(const HWND, const UINT, const WPARAM, const LPARAM);
+			//std::vector< void(*)(HDC) > Layer;
+		public:
+			void Layout(CODE (*LayoutFunc)(HDC));
+			
+		private:
+			std::function< int(HDC) > LayoutFuncP;
 		public:
 			void Print();
 		};
 	}
 }
+
+#endif

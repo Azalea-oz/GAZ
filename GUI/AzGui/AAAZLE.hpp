@@ -1,5 +1,6 @@
 #pragma once
 
+
 #include<windows.h>
 #include<gdiplus.h>
 #include<commctrl.h>
@@ -10,13 +11,11 @@
 
 
 
-#include"defines.cpp"
+#include"defines.hpp"
 
 #include"CTRL/ctrolor.hpp"
 
-#include"paint.hpp"
-#include"wclass.hpp"
-#include"gui.hpp"
-
-
+#include"PAINT/paint.hpp"
+#include"WCLASS/wclass.hpp"
+#include"GUI/gui.hpp"
 

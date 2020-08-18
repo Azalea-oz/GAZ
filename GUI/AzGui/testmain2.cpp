@@ -1,90 +1,76 @@
+#include <ole2.h>
+#include <gdiplus.h>
 #include"AAAZLE.hpp"
+#include"testmain2.hpp"
 
-//#define ID_BUTTON 1200;
-#define ID_BUTTON2 1201
-
-#define USE_DEBUG (1)
-
-class MYWINDOW : public AZ::GUI::WINDOW{
-public:
-	MYWINDOW(int w, int h) : WINDOW(w, h){}
-	MYWINDOW(int w, int h, std::string str) : WINDOW(w, h, str){}
-	~MYWINDOW(){}
-	CODE EPAINT(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){
-		DEBUG::DebugConsole::Get_Instance().Log("Called Main Window EPAINT");
-		
-		PAINTSTRUCT ps;
-		HDC hdc = BeginPaint(hwnd, &ps);
-		Rectangle(hdc , 0 , 0 , 500 , 500);
-		EndPaint(hwnd, &ps);
-		return 1;
-	}
-	CODE ECLOSE(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){
-		if (IDYES == MessageBox(hwnd, "end", "Confirmation", MB_YESNO)) {
-			DestroyWindow(hwnd);
-		}
-		return 0;
-	}
-	CODE ECOMMAND(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){
-		switch(LOWORD(wp)){
-		case ID_BUTTON:
-			DEBUG::DebugConsole::Get_Instance().Log("Button Clicked");
-			break;
-		case ID_BUTTON2:
-			DEBUG::DebugConsole::Get_Instance().Log("Button Clicked 2");
-			break;
-		}
-		return 1;
-	}
-};
-class BTNWINDOW : public AZ::GUI::WINDOW{
-public:
-	BTNWINDOW(int w, int h) : WINDOW(w, h){}
-	BTNWINDOW(int w, int h, std::string str) : WINDOW(w, h, str){}
-	~BTNWINDOW(){}
-	CODE EPAINT(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){
-		DEBUG::DebugConsole::Get_Instance().Log("Called Button Window EPAINT");
-		PAINTSTRUCT ps;
-		HDC hdc = BeginPaint(hwnd, &ps);
-		
-		Gdiplus::Graphics gra(hdc);
-		
-		Gdiplus::Pen MyPen(Gdiplus::Color(255, 0, 0, 255), 5);
-		
-		gra.DrawLine(&MyPen, 0, 0, 20, 20);
-		
-		EndPaint(hwnd, &ps);
-		return 1;
-	}
-	CODE ECOMMAND(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){
-		switch(msg){
-		case WM_ERASEBKGND:
-			return 1L;
-		}
-		return 1;
-	}
-	
-	
-};
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow){
-	DEBUG::DebugConsole::Get_Instance();
-	MYWINDOW mw(500, 500, "noblesse oblige");
-	BTNWINDOW mw2(100, 50, "�M��");
-	BTNWINDOW mw3(100, 50, "����");
-	mw.WClassStyle(CS_HREDRAW | CS_VREDRAW).Register();
+	DEBUG::DebugConsole::Get_Instance().Init();
 	
-	mw2.WClassName("BUTTON");
-	mw2.WindowExStyle(0).WindowStyle(WS_CHILD | WS_VISIBLE | BS_OWNERDRAW).WindowPos(0, 0);
+	Gdiplus::GdiplusStartupInput gdiplusStartupInput; // MSDNにそのままのコードがある.
+	ULONG_PTR gdiplusToken;
+	Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
+	
+	//AZ::GUI::WINDOW::UseUnicode(false);
+	MYWINDOW mw(500, 500, L"ʕ•̫͡•ʕ*̫͡*ʕ•͓͡•ʔ-̫͡-ʕ•̫͡•ʔ*̫͡*ʔ-̫͡-ʔ");
+	
+	
+	MYWINDOW mw2(400, 400, L"my2");
+	
+	
+	BTNWINDOW bw2(100, 50, L"貴族");
+	BTNWINDOW bw3(100, 50, L"平民");
+	
+	mw.WClassStyle(CS_HREDRAW | CS_VREDRAW).WClassName(L"MainWindow").Register();
+	mw.WindowStyle(WS_OVERLAPPEDWINDOW | WS_VISIBLE | WS_VSCROLL).WindowPos(0, 0);
+	//mw.Borderless();
+	
+	mw2.WClassStyle(CS_HREDRAW | CS_VREDRAW).WClassName(L"my2").Register();
+	mw2.WindowStyle(WS_CHILD | WS_VISIBLE | WS_VISIBLE);
 	mw.Child(mw2, (HMENU)ID_BUTTON);
 	
-	mw3.WClassName("BUTTON");
-	mw3.WindowExStyle(0).WindowStyle(WS_CHILD | WS_VISIBLE).WindowPos(100, 0);
-	mw.Child(mw3, (HMENU)ID_BUTTON2);
+	
+	bw2.WClassName(L"BUTTON");
+	bw2.WindowExStyle(0).WindowStyle(WS_CHILD | WS_VISIBLE | BS_OWNERDRAW).WindowPos(0, 0);
+	bw2.Layout([](HDC hdc){
+		DEBUG::DebugConsole::Get_Instance().Log("BTN layer was called");
+		LineTo(hdc, 100, 50);
+		MoveToEx(hdc, 100, 0, NULL);
+		LineTo(hdc, 0, 50);
+		
+		Gdiplus::Graphics graphics(hdc);
+		Gdiplus::Image image(L"IMG/test_red.bmp");
+		graphics.DrawImage(&image, 0, 0, image.GetWidth() * 2, image.GetHeight());
+		
+		return 0;
+	});
+	
+	mw2.Child(bw2, (HMENU)ID_BUTTON);
+	
+	bw3.WClassName(L"BUTTON");
+	bw3.WindowExStyle(0).WindowStyle(WS_CHILD | WS_VISIBLE).WindowPos(100, 0);
+	mw2.Child(bw3, (HMENU)ID_BUTTON2);
+	
+	
+	mw.Layout([](HDC hdc){
+		Rectangle(hdc , 0 , 0 , 500 , 500);
+		LineTo(hdc, 500, 500);
+		MoveToEx(hdc, 0, 500, NULL);
+		LineTo(hdc, 500, 0);
+		return 0;
+	});
+	
+	mw2.Layout([](HDC hdc){
+		Rectangle(hdc , 0 , 0 , 400 , 400);
+		LineTo(hdc, 400, 400);
+		MoveToEx(hdc, 0, 400, NULL);
+		LineTo(hdc, 400, 0);
+		return 0;
+	});
 	
 	mw.Create();
-	
-	mw.Print();
+	//mw.Print();
 	mw.Show(nCmdShow);
+	
 	return mw.Message();
 }

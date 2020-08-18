@@ -1,8 +1,12 @@
-#pragma once
+#ifndef __WINDOWCLASS_HPP__
+#define __WINDOWCLASS_HPP__
 
 #include<windows.h>
 #include<array>
 #include<map>
+#include<iostream>
+
+
 
 namespace AZ{
 	namespace GUI{
@@ -28,12 +32,17 @@ namespace AZ{
 		public:
 			STATE();
 			STATE(const int, const int);
+			STATE(const int, const int, const int, const int);
+			STATE(POINT2);
+			STATE(POINT2, POINT2);
 			~STATE();
 			
 			void SetSize(const int, const int);
+			void SetSize(POINT2);
 			std::array<int, 2> GetSize();
 			
 			void SetPos(const int, const int);
+			void SetPos(POINT2);
 			std::array<int, 2> GetPos();
 			
 			void SetHandle(HWND);
@@ -66,8 +75,7 @@ namespace AZ{
 			TIMER = 22,
 			STATE = 23,
 		};
-		
-		
 	}
 }
 
+#endif
