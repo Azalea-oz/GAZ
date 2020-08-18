@@ -11,7 +11,7 @@
 #include<string>
 
 #include"dos_color.hpp"
-#include"../SINGLETON/singleton.hpp"
+#include"../AAAZLE/SINGLETON/singleton.hpp"
 
 #define DLL_EXPORT  __attribute__((visibility ("default")))
 
