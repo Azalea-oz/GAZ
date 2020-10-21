@@ -41,8 +41,26 @@ namespace AZ{
 				HFONT Create();
 				void TextColor();
 				void BkColor();
-				void Draw();
-				
+				DrawString(HDC, int, int, char*);
+				DrawString(HDC, int, int, std::string);
+				DrawString(HDC, int, int, wchar_t);
+				DrawString(HDC, int, int, std::wstring);
+				Size(int, int);
+				Angle(int, int);
+				Weight(int);
+				Italic(bool);
+				UnderLine(bool);
+				StrikeOut(bool);
+				CharSet(DWORD);
+				Precision(DWORD, DWORD);
+				Quality(DWORD);
+				Family(DWORD);
+				Pitch(DWORD);
+				FontName(const char *);
+				FontName(std::string);
+				FontName(wchar_t *);
+				FontName(std::wstring);
+				Wrap(int);
 				
 				
 			};

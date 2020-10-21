@@ -20,7 +20,8 @@
 
 #define WINDOW_CHILD 0xffff
 
-
+#define EBREAK (0)
+#define ECALL (1)
 
 
 namespace AZ{
@@ -35,12 +36,16 @@ namespace AZ{
 			PROCMAP();
 			~PROCMAP();
 			WINDOW* find(HWND);
-			void Register(HWND, WINDOW*);
-			void Remove(HWND);
+			bool Register(HWND, WINDOW*);
+			bool Remove(HWND);
+			
+			void DebugPrint();
 			
 		};
 		
-		class WINDOW : protected STATE{
+		
+		
+		class WINDOW : public STATE{
 			WNDCLASSEX wcex;
 			WNDCLASSEXW wcexw;
 			static WINDOW* tmp;
@@ -59,8 +64,6 @@ namespace AZ{
 			std::wstring lpszMenuNameW;
 			std::string lpszClassName;
 			std::wstring lpszClassNameW;
-			
-			static bool UnicodeMode;
 			
 			//function pointer
 			using WPROC = LRESULT (WINDOW::*)(HWND, UINT, WPARAM, LPARAM);
@@ -90,11 +93,24 @@ namespace AZ{
 			WINDOW& Register();
 			
 			LRESULT MyProc(HWND, UINT, WPARAM, LPARAM);
-			static void UseUnicode(bool);
-			static bool isUnicode();
 			
 			
-			
+			class MODE{
+				WINDOW *_pWindow;
+				bool _Unicode;
+				bool _DBuff;
+				bool _RelativeSize;
+			public:
+				MODE(WINDOW*);
+				~MODE();
+				void Unicode(const bool);
+				void DBuff(const bool);
+				void RelativeSize(const bool);
+				
+				bool isUnicode();
+				bool isDBuff();
+				bool isRelativeSize();
+			} Mode;
 			
 		protected:
 			const WNDCLASSEX GetWcex();
@@ -130,6 +146,9 @@ namespace AZ{
 			WINDOW& WindowTitle(const std::wstring);
 			WINDOW& WindowSize(const int, const int);
 			WINDOW& WindowPos(const int, const int);
+			
+			DWORD GetWindowStyle();
+			
 			WINDOW& Borderless();
 			
 			std::string GetTitleNameA();
@@ -138,6 +157,7 @@ namespace AZ{
 			HINSTANCE GetInst();
 			
 			void ResizeClient();
+			void ReSizeWindow(const int, const int);
 			
 			void Create();
 			void Create(const std::string);
@@ -152,12 +172,21 @@ namespace AZ{
 			PROC CustomProc;
 			
 			int Message();
-			void Show(int);
+			void Show(const int);
+			bool Enable(const bool);
 			
 			HWND GetHandle();
+			HWND GetParentHandle();
+			
+			WINDOW *Parent;
+			void SetParent(WINDOW*);
+			WINDOW& GetParent();
 		protected:
-			void SetHandle(HWND);
-			void SetParentHandle(HWND);
+			void SetHandle(const HWND);
+			void SetParentHandle(const HWND);
+			
+			
+			
 			
 		private:
 			bool RegisterFlag;
@@ -169,6 +198,8 @@ namespace AZ{
 			
 			void ESetProc();
 			std::array<CODE (WINDOW::*)(const HWND, const UINT, const WPARAM, const LPARAM), 24> CodeFuncArray;
+			
+			void _ESIZE(const HWND, const UINT, const WPARAM, const LPARAM);
 			
 			virtual CODE ECREATE(const HWND, const UINT, const WPARAM, const LPARAM);
 			virtual CODE ECLOSE(const HWND, const UINT, const WPARAM, const LPARAM);
@@ -193,9 +224,13 @@ namespace AZ{
 			virtual CODE EITEM(const HWND, const UINT, const WPARAM, const LPARAM);
 			virtual CODE ETIMER(const HWND, const UINT, const WPARAM, const LPARAM);
 			virtual CODE ESTATE(const HWND, const UINT, const WPARAM, const LPARAM);
+			virtual CODE EFILE(const HWND, const UINT, const WPARAM, const LPARAM);
+			virtual CODE EBKG(const HWND, const UINT, const WPARAM, const LPARAM);
+			virtual CODE ERELATIVESIZE(const HWND, const UINT, const WPARAM, const LPARAM);
 			LRESULT CALLBACK EBack(const HWND, const UINT, const WPARAM, const LPARAM);
 			
-			virtual CODE UNIQMSG(const HWND, const UINT, const WPARAM, const LPARAM);
+			virtual CODE CustomMsg(const HWND, const UINT, const WPARAM, const LPARAM);
+			CODE UNIQMSG(const HWND, const UINT, const WPARAM, const LPARAM);
 			virtual CODE EVENT(const HWND, const UINT, const WPARAM, const LPARAM);
 			
 			CODE _EPAINT(const HWND, const UINT, const WPARAM, const LPARAM);

@@ -1,5 +1,6 @@
 #include"gui.hpp"
 
+
 namespace AZ{
 	namespace GUI{
 		
@@ -12,24 +13,61 @@ namespace AZ{
 			return nullptr;
 		}
 		
-		void PROCMAP::Register(HWND hwnd, WINDOW *item){
-			hWndMap.insert(std::pair<HWND, WINDOW* >(hwnd, item));
+		bool PROCMAP::Register(HWND hwnd, WINDOW *item){
+			return  hWndMap.insert(std::pair<HWND, WINDOW* >(hwnd, item)).second;
 		}
 		
-		void PROCMAP::Remove(HWND hwnd){
+		bool PROCMAP::Remove(HWND hwnd){
 			std::map<HWND, WINDOW*>::iterator itr = hWndMap.find(hwnd);
 			if(itr != hWndMap.end()){
 				hWndMap.erase(itr);
+				return true;
 			}
+			return false;
 		}
 		
 		
+		void PROCMAP::DebugPrint(){
+			DEBUG::DebugConsole::Get_Instance().Log("-- PROCMAP --------------");
+			DEBUG::DebugConsole::Get_Instance().Log((int)hWndMap.size());
+			for(auto itr : hWndMap){
+				DEBUG::DebugConsole::Get_Instance().Log((LPVOID)itr.first);
+				DEBUG::DebugConsole::Get_Instance().Log((LPVOID)itr.second);
+			}
+			DEBUG::DebugConsole::Get_Instance().Log("-------------------------");
+			DEBUG::DebugConsole::Get_Instance().Log("");
+		}
 		
+		WINDOW::MODE::MODE(WINDOW *w){
+			_pWindow = w;
+			_Unicode = true;
+			_DBuff = false;
+			_RelativeSize = false;
+		}
+		WINDOW::MODE::~MODE(){}
+		void WINDOW::MODE::Unicode(const bool flag){
+			_Unicode = flag;
+		}
+		void WINDOW::MODE::DBuff(const bool flag){
+			_DBuff = flag;
+		}
+		void WINDOW::MODE::RelativeSize(const bool flag){
+			_RelativeSize = flag;
+		}
 		
+		bool WINDOW::MODE::isUnicode(){
+			return _Unicode;
+		}
+		bool WINDOW::MODE::isDBuff(){
+			return _DBuff;
+		}
+		bool WINDOW::MODE::isRelativeSize(){
+			return _RelativeSize;
+		}
 		
 		using CODE = int;
 		WINDOW* WINDOW::tmp = nullptr;
-		WINDOW::WINDOW() : STATE(){
+		WINDOW::WINDOW() : STATE(), Mode(this){
 			tmp = this;
 			style = CS_HREDRAW | CS_VREDRAW;
 			cbClsExtra = 0;
@@ -46,7 +84,7 @@ namespace AZ{
 			
 			ExStyle = WS_EX_ACCEPTFILES;
 			WStyle = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
-			WTitle = TEXT("Azalea Window");
+			WTitle = "Azalea Window";
 			WTitleW = L"Azalea Window";
 			
 			Menu = NULL;
@@ -58,18 +96,12 @@ namespace AZ{
 			
 			Border = false;
 			Proc = &WINDOW::WindowProc;
-			if(isUnicode()){
-				cbSize = sizeof(WNDCLASSEXW);
-				lpfnWndProc = EntryProcW;
-				DefProc = DefWindowProcW;
-			} else{
-				cbSize = sizeof(WNDCLASSEX);
-				lpfnWndProc = EntryProc;
-				DefProc = DefWindowProc;
-			}
+			cbSize = sizeof(WNDCLASSEXW);
+			lpfnWndProc = EntryProcW;
+			DefProc = DefWindowProcW;
 			InitCodeArray();
 		}
-		WINDOW::WINDOW(const int w, const int h) : STATE(w, h){
+		WINDOW::WINDOW(const int w, const int h) : STATE(w, h), Mode(this){
 			tmp = this;
 			style = CS_HREDRAW | CS_VREDRAW;
 			cbClsExtra = 0;
@@ -86,7 +118,7 @@ namespace AZ{
 			
 			ExStyle = WS_EX_ACCEPTFILES;
 			WStyle = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
-			WTitle = TEXT("Azalea Window");
+			WTitle = "Azalea Window";
 			WTitleW = L"Azalea Window";
 			
 			Menu = NULL;
@@ -98,19 +130,15 @@ namespace AZ{
 			
 			Border = false;
 			Proc = &WINDOW::WindowProc;
-			if(isUnicode()){
-				cbSize = sizeof(WNDCLASSEXW);
-				lpfnWndProc = EntryProcW;
-				DefProc = DefWindowProcW;
-			} else{
-				cbSize = sizeof(WNDCLASSEX);
-				lpfnWndProc = EntryProc;
-				DefProc = DefWindowProc;
-			}
+			cbSize = sizeof(WNDCLASSEXW);
+			lpfnWndProc = EntryProcW;
+			DefProc = DefWindowProcW;
+
 			InitCodeArray();
 		}
 		
-		WINDOW::WINDOW(const int w, const int h, const std::string title) : STATE(w, h){
+		WINDOW::WINDOW(const int w, const int h, const std::string title) : STATE(w, h), Mode(this){
+			Mode.Unicode(false);
 			tmp = this;
 			cbSize = sizeof(WNDCLASSEX);
 			style = CS_HREDRAW | CS_VREDRAW;
@@ -141,10 +169,10 @@ namespace AZ{
 			
 			Border = false;
 			Proc = &WINDOW::WindowProc;
-			DefProc = DefWindowProc;
+			DefProc = DefWindowProcA;
 			InitCodeArray();
 		}
-		WINDOW::WINDOW(const int w, const int h, const std::wstring title) : STATE(w, h){
+		WINDOW::WINDOW(const int w, const int h, const std::wstring title) : STATE(w, h), Mode(this){
 			tmp = this;
 			cbSize = sizeof(WNDCLASSEXW);
 			style = CS_HREDRAW | CS_VREDRAW;
@@ -178,7 +206,8 @@ namespace AZ{
 			DefProc = DefWindowProcW;
 			InitCodeArray();
 		}
-		WINDOW::WINDOW(const std::string title) : STATE(){
+		WINDOW::WINDOW(const std::string title) : STATE(), Mode(this){
+			Mode.Unicode(false);
 			tmp = this;
 			cbSize = sizeof(WNDCLASSEX);
 			style = CS_HREDRAW | CS_VREDRAW;
@@ -209,10 +238,10 @@ namespace AZ{
 			
 			Border = false;
 			Proc = &WINDOW::WindowProc;
-			DefProc = DefWindowProc;
+			DefProc = DefWindowProcA;
 			InitCodeArray();
 		}
-		WINDOW::WINDOW(const std::wstring title) : STATE(){
+		WINDOW::WINDOW(const std::wstring title) : STATE(), Mode(this){
 			tmp = this;
 			cbSize = sizeof(WNDCLASSEXW);
 			style = CS_HREDRAW | CS_VREDRAW;
@@ -273,7 +302,7 @@ namespace AZ{
 		}
 		
 		WINDOW& WINDOW::Register(){
-			if(isUnicode()){
+			if(Mode.isUnicode()){
 				wcexw.cbSize = cbSize;
 				wcexw.style = style;
 				wcexw.lpfnWndProc = lpfnWndProc;
@@ -311,6 +340,7 @@ namespace AZ{
 			return *this;
 		}
 		const WNDCLASSEX WINDOW::GetWcex(){return wcex;}
+		//const WNDCLASSEX WINDOW::GetWcexW(){return wcexw;}
 		
 		LRESULT CALLBACK WINDOW::EntryProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp){
 			WINDOW *ptr = PROCMAP::Get_Instance().find(hwnd);
@@ -326,6 +356,7 @@ namespace AZ{
 					ptr = (WINDOW*)(((LPCREATESTRUCT)lp)->lpCreateParams);
 					SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)(ptr));
 					ptr->SetHandle(hwnd);
+					ptr->ECREATE(hwnd, msg, wp, lp);
 				}
 			}
 			//return 0L;
@@ -334,17 +365,18 @@ namespace AZ{
 		LRESULT CALLBACK WINDOW::EntryProcW(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp){
 			WINDOW *ptr = PROCMAP::Get_Instance().find(hwnd);
 			
-			//hash map(window handle, window proc) 
+			//hash map(window handle, window proc)
 			if(ptr != nullptr){
 				if(msg == WM_DESTROY){
 					PROCMAP::Get_Instance().Remove(hwnd);
 				}
-				return ptr->MyProc(hwnd, msg, wp, lp);
+				return ptr->MyProc(ptr->GetHandle(), msg, wp, lp);
 			} else{
 				if(msg == WM_CREATE || msg == WM_INITDIALOG){
 					ptr = (WINDOW*)(((LPCREATESTRUCT)lp)->lpCreateParams);
-					SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)(ptr));
+					SetWindowLongPtrW(hwnd, GWLP_USERDATA, (LONG_PTR)(ptr));
 					ptr->SetHandle(hwnd);
+					ptr->ECREATE(hwnd, msg, wp, lp);
 				}
 			}
 			//return 0L;
@@ -352,6 +384,11 @@ namespace AZ{
 		}
 		
 		LRESULT WINDOW::MyProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp){
+			std::wstring _str = L"[";
+			_str += GetTitleNameW();
+			_str += L"] > ";
+			_str += CvtMsgCodetowc(msg);
+			//DEBUG::DebugConsole::Get_Instance().Log(_str);
 			return (this->WindowProc)(hwnd, msg, wp, lp);
 		}
 		
@@ -362,6 +399,9 @@ namespace AZ{
 		WINDOW& WINDOW::WindowStyle(const DWORD s){
 			WStyle = s;
 			return *this;
+		}
+		DWORD WINDOW::GetWindowStyle(){
+			return WStyle;
 		}
 		WINDOW& WINDOW::WindowTitle(const std::string title){
 			WTitle = title;
@@ -392,7 +432,7 @@ namespace AZ{
 		void WINDOW::ResizeClient(){
 			RECT wrect, crect;
 			
-			if(Border && (hparent == nullptr)){
+			if(Border && (GetParentHandle() == nullptr)){
 				GetWindowRect(hwnd, &wrect);
 				SetWindowLong(hwnd, GWL_STYLE, WS_POPUP | WS_BORDER);
 				POINT pt;
@@ -415,31 +455,38 @@ namespace AZ{
 			
 			SetWindowPos(hwnd, NULL, 0, 0, _Width, _Height, SWP_NOZORDER|SWP_NOOWNERZORDER|SWP_NOMOVE);
 		}
+		
+		void WINDOW::ReSizeWindow(const int w, const int h){
+			SetSize(w, h);
+			SetWindowPos(GetHandle(), 0, 0, 0, w, h, SWP_NOMOVE | SWP_NOZORDER);
+		}
+		
 		void WINDOW::Create(){
-			if(isUnicode()){
+			if(Mode.isUnicode()){
 				hwnd = CreateWindowExW(
 					ExStyle,
 					lpszClassNameW.c_str(), WTitleW.c_str(),
 					WStyle,
 					GetPos()[0], GetPos()[1], GetSize()[0], GetSize()[1],
-					hparent, Menu, hInstance, this);
+					GetParentHandle(), Menu, hInstance, this);
 			} else{
 				hwnd = CreateWindowExA(
 					ExStyle,
 					lpszClassName.c_str(), WTitle.c_str(),
 					WStyle,
 					GetPos()[0], GetPos()[1], GetSize()[0], GetSize()[1],
-					hparent, Menu, hInstance, this);
+					GetParentHandle(), Menu, hInstance, this);
 			}
-			PROCMAP::Get_Instance().Register(hwnd, this);
-			if(hwnd == nullptr){
-				DEBUG::error_dialog(NULL);
-			}
-			DEBUG::DebugConsole::Get_Instance().Log("Create was called");
+			PROCMAP::Get_Instance().Register(GetHandle(), this);
+			if(hwnd == nullptr) DEBUG::error_dialog(NULL);
+			
 			ResizeClient();
+			if(GetParentHandle() == nullptr) ESetProc();
+			
 			if(ChildWindow.size() != 0){
 				for(auto v : ChildWindow){
-					v.second->SetParentHandle(hwnd);
+					v.second->SetParentHandle(GetHandle());
+					v.second->SetParent(this);
 					v.second->Create();
 					v.second->ESetProc();
 				}
@@ -452,16 +499,19 @@ namespace AZ{
 				lpszClassName.c_str(), WTitle.c_str(),
 				WStyle,
 				GetPos()[0], GetPos()[1], GetSize()[0], GetSize()[1],
-				hparent, NULL, hInstance, this);
-			PROCMAP::Get_Instance().Register(hwnd, this);
+				GetParentHandle(), NULL, hInstance, this);
+			PROCMAP::Get_Instance().Register(GetHandle(), this);
 			if(hwnd == nullptr){
 				DEBUG::error_dialog(NULL);
 			}
+			
 			ResizeClient();
+			if(GetParentHandle() == nullptr) ESetProc();
 			if(ChildWindow.size() != 0){
-				DEBUG::DebugConsole::Get_Instance().Log("Create Child");
+				//DEBUG::DebugConsole::Get_Instance().Log("Create Child");
 				for(auto v : ChildWindow){
-					v.second->SetParentHandle(hwnd);
+					v.second->SetParentHandle(GetHandle());
+					v.second->SetParent(this);
 					v.second->Create();
 					v.second->ESetProc();
 					
@@ -475,16 +525,18 @@ namespace AZ{
 				lpszClassNameW.c_str(), WTitleW.c_str(),
 				WStyle,
 				GetPos()[0], GetPos()[1], GetSize()[0], GetSize()[1],
-				hparent, NULL, hInstance, this);
-			PROCMAP::Get_Instance().Register(hwnd, this);
+				GetParentHandle(), NULL, hInstance, this);
+			PROCMAP::Get_Instance().Register(GetHandle(), this);
 			if(hwnd == nullptr){
 				DEBUG::error_dialog(NULL);
 			}
 			ResizeClient();
+			if(GetParentHandle() == nullptr) ESetProc();
 			if(ChildWindow.size() != 0){
-				DEBUG::DebugConsole::Get_Instance().Log("Create Child");
+				//DEBUG::DebugConsole::Get_Instance().Log("Create Child");
 				for(auto v : ChildWindow){
 					v.second->SetParentHandle(hwnd);
+					v.second->SetParent(this);
 					v.second->Create();
 					v.second->ESetProc();
 					
@@ -492,7 +544,8 @@ namespace AZ{
 			}
 		}
 		void WINDOW::Child(WINDOW& ch, const HMENU Id){
-			DEBUG::DebugConsole::Get_Instance().Log("Set Child");
+			//DEBUG::DebugConsole::Get_Instance().Log("Set Child");
+			ch.WindowStyle(ch.GetWindowStyle() | WS_CHILD);
 			ch.SetMenu(Id);
 			ChildWindow.push_back(std::pair<HMENU, WINDOW*>(Id,&ch));
 		}
@@ -500,14 +553,27 @@ namespace AZ{
 			Menu = Id;
 		}
 		
+		void WINDOW::SetHandle(const HWND handle){
+			hwnd = handle;
+		}
+		
 		HWND WINDOW::GetHandle(){
 			return hwnd;
 		}
-		void WINDOW::SetHandle(HWND handle){
-			hwnd = handle;
-		}
-		void WINDOW::SetParentHandle(HWND handle){
+		
+		void WINDOW::SetParentHandle(const HWND handle){
 			hparent = handle;
+		}
+		
+		HWND WINDOW::GetParentHandle(){
+			return hparent;
+		}
+		
+		void WINDOW::SetParent(WINDOW* _Parent){
+			Parent = _Parent;
+		}
+		WINDOW& WINDOW::GetParent(){
+			return *Parent;
 		}
 		
 		
@@ -515,19 +581,25 @@ namespace AZ{
 			PAINTSTRUCT ps;
 			HDC hdc;
 			CODE code;
+			HIMC himc;
 			
 			switch(msg){
-			case WM_COMMAND:
-				if(UNIQMSG(hwnd, msg, wp, lp)){
-					if(ECOMMAND(hwnd, msg, wp, lp)){
-						return EBack(hwnd, msg, wp, lp);
-					}
-				}
-				return 0;
-			case WM_CREATE:
-				DEBUG::DebugConsole::Get_Instance().Log("Proc Called Create");
-				return ECREATE(hwnd, msg, wp, lp)? EBack(hwnd, msg, wp, lp) : 0;
 				
+			case WM_COMMAND:
+				switch(LOWORD(wp)){
+				case AZ_RELATIVE_SIZE:
+					if(ERELATIVESIZE(hwnd, msg, wp, lp)) return EBack(hwnd, msg, wp, lp);
+				}
+				if(UNIQMSG(hwnd, msg, wp, lp)) return EBack(hwnd, msg, wp, lp);
+				if(ECOMMAND(hwnd, msg, wp, lp)) return EBack(hwnd, msg, wp, lp);
+				return 0;
+			
+			//create
+			case WM_CREATE:
+				//DEBUG::DebugConsole::Get_Instance().Log("Proc Called Create");
+				return ECREATE(hwnd, msg, wp, lp)? EBack(hwnd, msg, wp, lp) : 0;
+			
+			
 			//button (throw down)
 			case WM_LBUTTONDBLCLK:
 			case WM_LBUTTONDOWN:
@@ -575,6 +647,10 @@ namespace AZ{
 			case WM_NCMOUSEMOVE:
 				return ENCMOUSE(hwnd, msg, wp, lp)? EBack(hwnd, msg, wp, lp) : 0;
 			
+			//DROP
+			case WM_DROPFILES:
+				return EFILE(hwnd, msg, wp, lp)? EBack(hwnd, msg, wp, lp) : 0;
+			
 			//EDIT BOX or COMBO BOX (throw down)
 			case WM_CLEAR:
 			case WM_COPY:
@@ -595,7 +671,7 @@ namespace AZ{
 			case WM_SYSKEYDOWN:
 			case WM_SYSKEYUP:
 				return EKEY(hwnd, msg, wp, lp)? EBack(hwnd, msg, wp, lp) : 0;
-				
+			
 			case WM_CLOSE:
 				return ECLOSE(hwnd, msg, wp, lp)? EBack(hwnd, msg, wp, lp) : 0;
 				
@@ -604,7 +680,7 @@ namespace AZ{
 				
 			case WM_QUIT:
 				return EQUIT(hwnd, msg, wp, lp)? EBack(hwnd, msg, wp, lp) : 0;
-				
+			
 			//SCROLL (throw down)
 			case WM_HSCROLL:
 			case WM_VSCROLL:
@@ -626,6 +702,7 @@ namespace AZ{
 				
 			//SIZE
 			case WM_SIZE:
+				_ESIZE(hwnd, msg, wp, lp);
 				return ESIZE(hwnd, msg, wp, lp)? EBack(hwnd, msg, wp, lp) : 0;
 			
 			//TEXT (throw down)
@@ -646,11 +723,29 @@ namespace AZ{
 			case WM_DRAWITEM:
 				return EITEM(hwnd, msg, wp, lp)? EBack(hwnd, msg, wp, lp) : 0;
 				
+			case WM_ERASEBKGND:
+				if(Mode.isDBuff() == true) return 1;
+				return EBKG(hwnd, msg, wp, lp)? EBack(hwnd, msg, wp, lp) : 0;
 			
 			case WM_PAINT:
-				return _EPAINT(hwnd, msg, wp, lp)? EBack(hwnd, msg, wp, lp) : 0L;
+				//return EBack(hwnd, msg, wp, lp);	//描画内外で問題ある
+				//DEBUG::DebugConsole::Get_Instance().Log(msg);
+				return _EPAINT(hwnd, msg, wp, lp)? EBack(hwnd, msg, wp, lp) : 0;
+			
+			case WM_IME_SETCONTEXT:
+				himc = ImmGetContext(hwnd);
+				if(ImmGetOpenStatus(himc) == true){
+					DEBUG::DebugConsole::Get_Instance().Log("IMM status is off");
+					ImmSetOpenStatus(himc, false);
+				}
+				ImmReleaseContext(hwnd, himc);
+				return 0;
 				
 			case WM_NOTIFY:
+				
+				break;
+			case WM_PARENTNOTIFY:
+				
 				break;
 			case WM_SETREDRAW:
 				break;
@@ -662,7 +757,10 @@ namespace AZ{
 				
 			case WM_TIMER:
 				return ETIMER(hwnd, msg, wp, lp)? EBack(hwnd, msg, wp, lp) : 0;
-				
+			
+			default:
+				return EBack(hwnd, msg, wp, lp);
+				if(CustomMsg(hwnd, msg, wp, lp) == 1) return EBack(hwnd, msg, wp, lp);
 			}
 			return EBack(hwnd, msg, wp, lp);
 		}
@@ -695,29 +793,56 @@ namespace AZ{
 		}
 		
 		void WINDOW::ESetProc(){
-			if(RegisterFlag){
-				DEBUG::DebugConsole::Get_Instance().Log("EntryProc was set");
+			if(RegisterFlag == true){
+				//DEBUG::DebugConsole::Get_Instance().Log("EntryProc was set");
 			} else{
-				std::cout << "HWND : " << hwnd << std::endl;
-				DefProc = (WNDPROC)(LONG_PTR)GetWindowLongPtr(hwnd, GWLP_WNDPROC);
-				if(isUnicode()){
-					DEBUG::DebugConsole::Get_Instance().Log("EntryProcW is set");
-					SetWindowLongPtr(hwnd, GWLP_WNDPROC, (LONG_PTR)EntryProcW);
-				} else{
-					DEBUG::DebugConsole::Get_Instance().Log("EntryProc is set");
-					SetWindowLongPtr(hwnd, GWLP_WNDPROC, (LONG_PTR)EntryProc);
+				
+				//DEBUG::DebugConsole::Get_Instance().Log("EntryProc is setting");
+				if(Mode.isUnicode()){
+					if(lpfnWndProc != EntryProcW){
+						//本来のプロシージャをDefProcに格納
+						DefProc = (WNDPROC)(LONG_PTR)GetWindowLongPtrW(hwnd, GWLP_WNDPROC);
+						if(DefProc == 0) DEBUG::error_dialog(NULL);
+						//ProcをEntryProcに変更
+						SetWindowLongPtrW(hwnd, GWLP_WNDPROC, (LONG_PTR)EntryProcW);
+					}
+				}
+				else{
+					if(lpfnWndProc != EntryProc){
+						DefProc = (WNDPROC)(LONG_PTR)GetWindowLongPtr(hwnd, GWLP_WNDPROC);
+						if(DefProc == 0) DEBUG::error_dialog(NULL);
+						SetWindowLongPtr(hwnd, GWLP_WNDPROC, (LONG_PTR)EntryProc);
+					}
+				}
+			}
+			DEBUG::DebugConsole::Get_Instance().Log("-- Set DefProc ----------");
+			DEBUG::DebugConsole::Get_Instance().Log(GetTitleNameW());
+			DEBUG::DebugConsole::Get_Instance().Log((LPVOID)hwnd);
+			DEBUG::DebugConsole::Get_Instance().Log((LPVOID)DefProc);
+			DEBUG::DebugConsole::Get_Instance().Log("-------------------------");
+		}
+		
+		void WINDOW::_ESIZE(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){
+			if(LOWORD(lp) != GetSize()[0] && HIWORD(lp) != GetSize()[1]){
+				SetSize(LOWORD(lp), HIWORD(lp));
+				for(auto v : ChildWindow){
+					if(v.second->Mode.isRelativeSize() == true){
+						SendMessage(v.second->GetHandle(), WM_COMMAND, 0 | AZ_RELATIVE_SIZE, 0);
+					}
 				}
 			}
 		}
+		
 		CODE WINDOW::ECREATE(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){return 1;}
 		CODE WINDOW::_EPAINT(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){
-			PAINTSTRUCT ps;
 			CODE ret = EPAINT(hwnd, msg, wp, lp);
-			if(ret){
-				HDC hdc = BeginPaint(hwnd , &ps);
-				if(LayoutFuncP != nullptr) ret = LayoutFuncP(hdc);
-				EndPaint(hwnd , &ps);
+			if(ret == 1 && LayoutFuncP != nullptr){
+				PAINTSTRUCT ps;
+				HDC hdc = BeginPaint(hwnd, &ps);
+				ret = LayoutFuncP(hdc);
+				EndPaint(hwnd, &ps);
 			}
+
 			return ret;
 		}
 		CODE WINDOW::EPAINT(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){return 1;}
@@ -746,18 +871,38 @@ namespace AZ{
 		CODE WINDOW::EITEM(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){return 1;}
 		CODE WINDOW::ETIMER(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){return 1;}
 		CODE WINDOW::ESTATE(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){return 1;}
+		CODE WINDOW::EFILE(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){return 1;}
+		CODE WINDOW::EBKG(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){return 1;}
+		CODE WINDOW::ERELATIVESIZE(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){return 1;}
 		LRESULT CALLBACK WINDOW::EBack(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){
-			return CallWindowProc(DefProc, hwnd, msg, wp, lp);
+			if(Mode.isUnicode()){
+				return CallWindowProcW(DefProc, hwnd, msg, wp, lp);
+			}
+			else return CallWindowProc(DefProc, hwnd, msg, wp, lp);
 		}
 		
 		CODE WINDOW::UNIQMSG(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){
-			for(auto v : ChildWindow){
-				if((HMENU)LOWORD(wp) == v.first){
-					return v.second->EVENT(hwnd, msg, wp, lp);
+			
+			if(ChildWindow.size() != 0){
+				//DEBUG::DebugConsole::Get_Instance().Log("-- Child Size -----------");
+				//DEBUG::DebugConsole::Get_Instance().Log((int)ChildWindow.size());
+				
+				for(auto v : ChildWindow){
+					if((LPVOID)LOWORD(wp) == (LPVOID)v.first){
+						//DEBUG::DebugConsole::Get_Instance().Log((LPVOID)LOWORD(wp));
+						//DEBUG::DebugConsole::Get_Instance().Log((LPVOID)v.first);
+						std::wstring tmp = L"pass -> ";
+						tmp += v.second->GetTitleNameW();
+						//DEBUG::DebugConsole::Get_Instance().Log(tmp);
+						//DEBUG::DebugConsole::Get_Instance().Log("-------------------------");
+						return v.second->EVENT(v.second->GetHandle(), msg, wp, lp);
+					}
 				}
+				//DEBUG::DebugConsole::Get_Instance().Log("-------------------------");
 			}
 			return 1;
 		}
+		CODE WINDOW::CustomMsg(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){return 1;}
 		CODE WINDOW::EVENT(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){return 1;}
 		
 		void WINDOW::Layout(CODE (*LayoutFunc)(HDC)){
@@ -767,29 +912,61 @@ namespace AZ{
 		
 		
 		
-		void WINDOW::Show(int flag){
+		void WINDOW::Show(const int flag){
 			ShowWindow(hwnd, flag);
 			UpdateWindow(hwnd);
 		}
 		
+		bool WINDOW::Enable(const bool flag){
+			return EnableWindow(GetHandle(), flag);
+		}
+		
 		int WINDOW::Message(){
-			if(isUnicode()){
+			if(Mode.isUnicode()){
+				/*
 				while(GetMessageW(&msg, NULL, 0, 0) > 0){
 					TranslateMessage(&msg);
 					DispatchMessageW(&msg);
+				}*/
+				while(1){
+					if(PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)){
+						if(msg.message == WM_QUIT) break;
+						TranslateMessage(&msg);
+						DispatchMessage(&msg);
+					}
 				}
-			} else{
+			} 
+			else{
 				while(GetMessage(&msg, NULL, 0, 0) > 0){
 					TranslateMessage(&msg);
 					DispatchMessage(&msg);
 				}
 			}
+			
+			
+			/*
+			if(isUnicode()){
+				while(msg.message != WM_QUIT){
+					if(PeekMessageW(&msg, NULL, 0, 0, PM_REMOVE)){
+						TranslateMessage(&msg);
+						DispatchMessageW(&msg);
+					}
+				}
+			} else{
+				while(msg.message != WM_QUIT){
+					if(PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)){
+						TranslateMessage(&msg);
+						DispatchMessage(&msg);
+					}
+				}
+			}
+			*/
 			return (int)msg.wParam;
 		}
 		void WINDOW::Print(){
 			DEBUG::DebugConsole::Get_Instance().Log("start create");
 			DEBUG::DebugConsole::Get_Instance().Log(ExStyle);
-			if(isUnicode()){
+			if(Mode.isUnicode()){
 				DEBUG::DebugConsole::Get_Instance().Log(lpszClassNameW.c_str());
 			} else{
 				DEBUG::DebugConsole::Get_Instance().Log(lpszClassName.c_str());
@@ -801,16 +978,5 @@ namespace AZ{
 			DEBUG::DebugConsole::Get_Instance().Log(GetSize()[0]);
 			DEBUG::DebugConsole::Get_Instance().Log(GetSize()[1]);
 		}
-		
-		//default use UNICODE
-		bool WINDOW::UnicodeMode = true;
-		void WINDOW::UseUnicode(bool Flag){
-			UnicodeMode = Flag;
-		}
-		bool WINDOW::isUnicode(){
-			return UnicodeMode;
-		}
-		
-		
 	}
 }
