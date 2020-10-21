@@ -12,7 +12,7 @@
 #include<map>
 #include<functional>
 
-#include"../DEBUG/AzDebug.hpp"
+#include"../../DEBUG/AzDebug.hpp"
 #include"../defines.hpp"
 #include"../WCLASS/wclass.hpp"
 #include"../PAINT/paint.hpp"

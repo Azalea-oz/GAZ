@@ -9,7 +9,7 @@
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow){
 	//FreeConsole();
-	DEBUG::DebugConsole::Get_Instance().Init();
+	//DEBUG::DebugConsole::Get_Instance().Init();
 	
 	
 	
