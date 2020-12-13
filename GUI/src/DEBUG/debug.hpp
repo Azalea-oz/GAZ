@@ -5,29 +5,50 @@
 #include<ios>
 #include<iomanip>
 #include<iostream>
-#include <sstream>
+#include<sstream>
 #include<cstdio>
 #include<ctime>
 #include<chrono>
+#include<io.h>
+#include<fcntl.h>
 
 #include"dos_color.hpp"
-#include"../src/SINGLETON/singleton.hpp"
+#include"../SINGLETON/singleton.hpp"
 
 #define DLL_EXPORT  __attribute__((visibility ("default")))
 
-
+/*
+class HOOKER{
+	HHOOK hhk;
+	static HOOKER *tmp;
+public:
+	HOOKER();
+	~HOOKER();
+	Start();
+	End();
+	
+private:
+	static LRESULT CALLBACK EntryProc(int, WPARAM, LPARAM);
+public:
+	virtual LRESULT HookProc(int, WPARAM, LPARAM);
+};
+*/
 
 namespace DEBUG{
-	DLL_EXPORT void error_dialog(HWND);
-	DLL_EXPORT BOOL WINAPI HandlerRoutine(DWORD);
+	void error_dialog(HWND);
+	BOOL WINAPI HandlerRoutine(DWORD);
 	template<typename T>
 	constexpr void DLog(T);
 	
-	class DLL_EXPORT DebugConsole : public SINGLETON::Singleton<DebugConsole>{
+	class DebugConsole : public SINGLETON::Singleton<DebugConsole>{
 		HANDLE hout;
+		int hConsole;
 		bool DEBUG_TIME;
 		int Debug_Line;
 		bool UseFlag;
+		
+		FILE *fpOut;
+		FILE *fpIn;
 		
 		DWORD NumOfWritten;
 		

@@ -19,11 +19,7 @@ lib32: $(OBJS)
 
 .PHONY: dll64
 dll64:
-	g++ -shared -o $(DLL64) $(SRCCPP) -Wl,--out-implib,azdebug64.lib
-
-.PHONY: dll64D
-dll64D:
-	g++ -shared -o $(DLL64) $(SRCCPP) -Wl,--out-implib,azdebug64D.lib -DAZ_DEBUG
+	g++ -static -shared -o $(DLL64) $(SRCCPP) -Wl,--out-implib,libdebug.a
 
 .PHONY: lib64
 lib64: $(OBJS)

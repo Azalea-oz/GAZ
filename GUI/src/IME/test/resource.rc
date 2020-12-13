@@ -1,0 +1,21 @@
+// ime01.rcの一部
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Menu
+//
+
+#include"resource.h"
+
+MYMENU MENU DISCARDABLE 
+BEGIN
+    POPUP "ファイル(&F)"
+    BEGIN
+        MENUITEM "終了(&X)...",                 IDM_END
+    END
+    POPUP "オプション(&O)"
+    BEGIN
+        MENUITEM "IME設定(&D)...",              IDM_IMEDLG
+        MENUITEM "単語登録(&R)...",             IDM_REGIST
+    END
+END
