@@ -1,6 +1,6 @@
 #include"gui.hpp"
 
-
+#define AZ_DEBUG 1
 namespace AZ{
 	namespace GUI{
 		
@@ -41,265 +41,119 @@ namespace AZ{
 		}
 		
 		WINDOW::MODE::MODE(WINDOW *w){
-			_pWindow = w;
-			_Unicode = true;
-			_DBuff = false;
-			_RelativeSize = false;
+			wp = w;
+			state = false;
 		}
 		WINDOW::MODE::~MODE(){}
-		void WINDOW::MODE::Unicode(const bool flag){
-			_Unicode = flag;
-		}
-		void WINDOW::MODE::DBuff(const bool flag){
-			_DBuff = flag;
-		}
-		void WINDOW::MODE::RelativeSize(const bool flag){
-			_RelativeSize = flag;
+		void WINDOW::MODE::Enable(const bool flag){
+			state = flag;
 		}
 		
-		bool WINDOW::MODE::isUnicode(){
-			return _Unicode;
+		bool WINDOW::MODE::is(){
+			return state;
 		}
-		bool WINDOW::MODE::isDBuff(){
-			return _DBuff;
+		
+		void WINDOW::InitWindowClass(){
+			cbSize = Unicode.is()? sizeof(WNDCLASSEXW) : sizeof(WNDCLASSEX);
+			style = CS_HREDRAW | CS_VREDRAW;
+			cbClsExtra = 0;
+			cbWndExtra = 0;
+			hInstance = GetModuleHandle(NULL);
+			hIcon = LoadIcon(NULL , IDI_APPLICATION);
+			hIconSm = LoadIcon(NULL , IDI_APPLICATION);
+			hCursor = LoadCursor(NULL, IDC_ARROW);
+			hbrBackground = (HBRUSH)COLOR_APPWORKSPACE;
+			lpszMenuName = "AzMenu";
+			lpszClassName = "AzWindow";
+			lpszMenuNameW = L"AzMenu";
+			lpszClassNameW = L"AzWindow";
+			
+			lpfnWndProc = Unicode.is()? EntryProcW : EntryProcA;
+			DefProc = Unicode.is()? DefWindowProcW : DefWindowProcA;
+			
+			_ExStyle = WS_EX_ACCEPTFILES;
+			_WindowStyle = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
+			_Title = "Azalea Window";
+			_TitleW = L"Azalea Window";
 		}
-		bool WINDOW::MODE::isRelativeSize(){
-			return _RelativeSize;
+		
+		void WINDOW::InitFrameRate(int rate){
+			FrameRate = rate;
+			WaitToNextTime = CurrentTimeMilli() + 1000 / FrameRate;
 		}
 		
 		using CODE = int;
 		WINDOW* WINDOW::tmp = nullptr;
-		WINDOW::WINDOW() : STATE(), Mode(this){
-			tmp = this;
-			style = CS_HREDRAW | CS_VREDRAW;
-			cbClsExtra = 0;
-			cbWndExtra = 0;
-			hInstance = GetModuleHandle(NULL);
-			hIcon = LoadIcon(NULL , IDI_APPLICATION);
-			hIconSm = LoadIcon(NULL , IDI_APPLICATION);
-			hCursor = LoadCursor(NULL, IDC_ARROW);
-			hbrBackground = (HBRUSH)COLOR_APPWORKSPACE;
-			lpszMenuName = "AzMenu";
-			lpszClassName = "AzWindow";
-			lpszMenuNameW = L"AzMenu";
-			lpszClassNameW = L"AzWindow";
-			
-			_ExStyle = WS_EX_ACCEPTFILES;
-			_WindowStyle = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
-			_Title = "Azalea Window";
-			_TitleW = L"Azalea Window";
-			
-			Menu = NULL;
-			hwnd = nullptr;
-			hparent = nullptr;
-			
-			RegisterFlag = false;
-			LayoutFuncP = nullptr;
-			_GameLoopP = nullptr;
-			
-			Border = false;
-			Proc = &WINDOW::WindowProc;
-			cbSize = sizeof(WNDCLASSEXW);
-			lpfnWndProc = EntryProcW;
-			DefProc = DefWindowProcW;
-			InitCodeArray();
-			
-			FrameRate = 30;
-			WaitToNextTime = CurrentTimeMicro() + 1000 * 1000 / FrameRate;
+		WINDOW::WINDOW() :
+			STATE(), Unicode(this), DBuff(this), DClick(this), AutoReSize(this),
+			hwnd(nullptr), hparent(nullptr), Menu(NULL), RegisterFlag(false),
+			Border(false), Proc(&WINDOW::WindowProc){
+				Unicode.Enable(true);
+				tmp = this;
+				
+				InitWindowClass();
+				InitLambda();
+				InitCodeArray();
+				InitFrameRate(30);
 		}
-		WINDOW::WINDOW(const int w, const int h) : STATE(w, h), Mode(this){
-			tmp = this;
-			style = CS_HREDRAW | CS_VREDRAW;
-			cbClsExtra = 0;
-			cbWndExtra = 0;
-			hInstance = GetModuleHandle(NULL);
-			hIcon = LoadIcon(NULL , IDI_APPLICATION);
-			hIconSm = LoadIcon(NULL , IDI_APPLICATION);
-			hCursor = LoadCursor(NULL, IDC_ARROW);
-			hbrBackground = (HBRUSH)COLOR_APPWORKSPACE;
-			lpszMenuName = "AzMenu";
-			lpszClassName = "AzWindow";
-			lpszMenuNameW = L"AzMenu";
-			lpszClassNameW = L"AzWindow";
-			
-			_ExStyle = WS_EX_ACCEPTFILES;
-			_WindowStyle = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
-			_Title = "Azalea Window";
-			_TitleW = L"Azalea Window";
-			
-			Menu = NULL;
-			hwnd = nullptr;
-			hparent = nullptr;
-			
-			RegisterFlag = false;
-			LayoutFuncP = nullptr;
-			_GameLoopP = nullptr;
-			
-			Border = false;
-			Proc = &WINDOW::WindowProc;
-			cbSize = sizeof(WNDCLASSEXW);
-			lpfnWndProc = EntryProcW;
-			DefProc = DefWindowProcW;
-
-			InitCodeArray();
-			
-			FrameRate = 30;
-			WaitToNextTime = CurrentTimeMicro() + 1000 * 1000 / FrameRate;
+		WINDOW::WINDOW(const int w, const int h) : 
+			STATE(w, h), Unicode(this), DBuff(this), DClick(this), AutoReSize(this),
+			hwnd(nullptr), hparent(nullptr), Menu(NULL), RegisterFlag(false),
+			Border(false), Proc(&WINDOW::WindowProc){
+				Unicode.Enable(true);
+				tmp = this;
+				
+				InitWindowClass();
+				InitLambda();
+				InitCodeArray();
+				InitFrameRate(30);
 		}
 		
-		WINDOW::WINDOW(const int w, const int h, const std::string title) : STATE(w, h), Mode(this){
-			Mode.Unicode(false);
-			tmp = this;
-			cbSize = sizeof(WNDCLASSEX);
-			style = CS_HREDRAW | CS_VREDRAW;
-			lpfnWndProc = EntryProc;
-			cbClsExtra = 0;
-			cbWndExtra = 0;
-			hInstance = GetModuleHandle(NULL);
-			hIcon = LoadIcon(NULL , IDI_APPLICATION);
-			hIconSm = LoadIcon(NULL , IDI_APPLICATION);
-			hCursor = LoadCursor(NULL, IDC_ARROW);
-			hbrBackground = (HBRUSH)COLOR_APPWORKSPACE;
-			lpszMenuName = "AzMenu";
-			lpszClassName = "AzWindow";
-			lpszMenuNameW = L"AzMenu";
-			lpszClassNameW = L"AzWindow";
-			
-			_ExStyle = WS_EX_ACCEPTFILES;
-			_WindowStyle = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
-			_Title = title;
-			_TitleW = L"Azalea Window";
-			
-			Menu = NULL;
-			hwnd = nullptr;
-			hparent = nullptr;
-			
-			RegisterFlag = false;
-			LayoutFuncP = nullptr;
-			_GameLoopP = nullptr;
-			
-			Border = false;
-			Proc = &WINDOW::WindowProc;
-			DefProc = DefWindowProcA;
-			InitCodeArray();
-			
-			FrameRate = 30;
-			WaitToNextTime = CurrentTimeMicro() + 1000 * 1000 / FrameRate;
+		WINDOW::WINDOW(const int w, const int h, const std::string title) : 
+			STATE(w, h), Unicode(this), DBuff(this), DClick(this), AutoReSize(this),
+			hwnd(nullptr), hparent(nullptr), Menu(NULL), RegisterFlag(false),
+			Border(false), Proc(&WINDOW::WindowProc){
+				tmp = this;
+				
+				InitWindowClass();
+				InitLambda();
+				InitCodeArray();
+				InitFrameRate(30);
 		}
-		WINDOW::WINDOW(const int w, const int h, const std::wstring title) : STATE(w, h), Mode(this){
-			tmp = this;
-			cbSize = sizeof(WNDCLASSEXW);
-			style = CS_HREDRAW | CS_VREDRAW;
-			lpfnWndProc = EntryProcW;
-			cbClsExtra = 0;
-			cbWndExtra = 0;
-			hInstance = GetModuleHandle(NULL);
-			hIcon = LoadIcon(NULL , IDI_APPLICATION);
-			hIconSm = LoadIcon(NULL , IDI_APPLICATION);
-			hCursor = LoadCursor(NULL, IDC_ARROW);
-			hbrBackground = (HBRUSH)COLOR_APPWORKSPACE;
-			lpszMenuName = "AzMenu";
-			lpszClassName = "AzWindow";
-			lpszMenuNameW = L"AzMenu";
-			lpszClassNameW = L"AzWindow";
-			
-			_ExStyle = WS_EX_ACCEPTFILES;
-			_WindowStyle = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
-			_Title = TEXT("Azalea Window");
-			_TitleW = title;
-			
-			Menu = NULL;
-			hwnd = nullptr;
-			hparent = nullptr;
-			
-			RegisterFlag = false;
-			LayoutFuncP = nullptr;
-			_GameLoopP = nullptr;
-			
-			Border = false;
-			Proc = &WINDOW::WindowProc;
-			DefProc = DefWindowProcW;
-			InitCodeArray();
-			
-			FrameRate = 30;
-			WaitToNextTime = CurrentTimeMicro() + 1000 * 1000 / FrameRate;
+		WINDOW::WINDOW(const int w, const int h, const std::wstring title) : 
+			STATE(w, h), Unicode(this), DBuff(this), DClick(this), AutoReSize(this),
+			hwnd(nullptr), hparent(nullptr), Menu(NULL), RegisterFlag(false),
+			Border(false), Proc(&WINDOW::WindowProc){
+				Unicode.Enable(true);
+				tmp = this;
+				
+				InitWindowClass();
+				InitLambda();
+				InitCodeArray();
+				InitFrameRate(30);
 		}
-		WINDOW::WINDOW(const std::string title) : STATE(), Mode(this){
-			Mode.Unicode(false);
-			tmp = this;
-			cbSize = sizeof(WNDCLASSEX);
-			style = CS_HREDRAW | CS_VREDRAW;
-			lpfnWndProc = EntryProc;
-			cbClsExtra = 0;
-			cbWndExtra = 0;
-			hInstance = GetModuleHandle(NULL);
-			hIcon = LoadIcon(NULL , IDI_APPLICATION);
-			hIconSm = LoadIcon(NULL , IDI_APPLICATION);
-			hCursor = LoadCursor(NULL, IDC_ARROW);
-			hbrBackground = (HBRUSH)COLOR_APPWORKSPACE;
-			lpszMenuName = "AzMenu";
-			lpszClassName = "AzWindow";
-			lpszMenuNameW = L"AzMenu";
-			lpszClassNameW = L"AzWindow";
-			
-			_ExStyle = WS_EX_ACCEPTFILES;
-			_WindowStyle = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
-			_Title = title;
-			_TitleW = L"Azalea Window";
-			
-			Menu = NULL;
-			hwnd = nullptr;
-			hparent = nullptr;
-			
-			RegisterFlag = false;
-			LayoutFuncP = nullptr;
-			_GameLoopP = nullptr;
-			
-			Border = false;
-			Proc = &WINDOW::WindowProc;
-			DefProc = DefWindowProcA;
-			InitCodeArray();
-			
-			FrameRate = 30;
-			WaitToNextTime = CurrentTimeMicro() + 1000 * 1000 / FrameRate;
+		WINDOW::WINDOW(const std::string title) : 
+			STATE(), Unicode(this), DBuff(this), DClick(this), AutoReSize(this),
+			hwnd(nullptr), hparent(nullptr), Menu(NULL), RegisterFlag(false),
+			Border(false), Proc(&WINDOW::WindowProc){
+				tmp = this;
+				
+				InitWindowClass();
+				InitLambda();
+				InitCodeArray();
+				InitFrameRate(30);
 		}
-		WINDOW::WINDOW(const std::wstring title) : STATE(), Mode(this){
-			tmp = this;
-			cbSize = sizeof(WNDCLASSEXW);
-			style = CS_HREDRAW | CS_VREDRAW;
-			lpfnWndProc = EntryProcW;
-			cbClsExtra = 0;
-			cbWndExtra = 0;
-			hInstance = GetModuleHandle(NULL);
-			hIcon = LoadIcon(NULL , IDI_APPLICATION);
-			hIconSm = LoadIcon(NULL , IDI_APPLICATION);
-			hCursor = LoadCursor(NULL, IDC_ARROW);
-			hbrBackground = (HBRUSH)COLOR_APPWORKSPACE;
-			lpszMenuName = "AzMenu";
-			lpszClassName = "AzWindow";
-			lpszMenuNameW = L"AzMenu";
-			lpszClassNameW = L"AzWindow";
-			
-			_ExStyle = WS_EX_ACCEPTFILES;
-			_WindowStyle = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
-			_Title = TEXT("Azalea Window");
-			_TitleW = title;
-			
-			Menu = NULL;
-			hwnd = nullptr;
-			hparent = nullptr;
-			
-			RegisterFlag = false;
-			LayoutFuncP = nullptr;
-			_GameLoopP = nullptr;
-			
-			Border = false;
-			Proc = &WINDOW::WindowProc;
-			DefProc = DefWindowProcW;
-			InitCodeArray();
-			
-			FrameRate = 30;
-			WaitToNextTime = CurrentTimeMicro() + 1000 * 1000 / FrameRate;
+		WINDOW::WINDOW(const std::wstring title) : 
+			STATE(), Unicode(this), DBuff(this), DClick(this), AutoReSize(this),
+			hwnd(nullptr), hparent(nullptr), Menu(NULL), RegisterFlag(false),
+			Border(false), Proc(&WINDOW::WindowProc){
+				Unicode.Enable(true);
+				tmp = this;
+				
+				InitWindowClass();
+				InitLambda();
+				InitCodeArray();
+				InitFrameRate(30);
 		}
 		WINDOW::~WINDOW(){
 			#ifdef AZ_DEBUG
@@ -330,7 +184,7 @@ namespace AZ{
 		}
 		
 		WINDOW& WINDOW::Register(){
-			if(Mode.isUnicode()){
+			if(Unicode.is()){
 				wcexw.cbSize = cbSize;
 				wcexw.style = style;
 				wcexw.lpfnWndProc = lpfnWndProc;
@@ -374,7 +228,7 @@ namespace AZ{
 		const WNDCLASSEX WINDOW::GetWcex(){return wcex;}
 		//const WNDCLASSEX WINDOW::GetWcexW(){return wcexw;}
 		
-		LRESULT CALLBACK WINDOW::EntryProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp){
+		LRESULT CALLBACK WINDOW::EntryProcA(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp){
 			WINDOW *ptr = PROCMAP::Get_Instance().find(hwnd);
 			
 			//hash map(window handle, window proc) 
@@ -418,7 +272,7 @@ namespace AZ{
 		LRESULT WINDOW::MyProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp){
 			#ifdef AZ_DEBUG
 			std::wstring _str = L"[";
-			_str += GetTitleNameW();
+			_str += GetTitleW();
 			_str += L"] > ";
 			_str += CvtMsgCodetowc(msg);
 			DEBUG::DebugConsole::Get_Instance().Log(_str);
@@ -461,13 +315,36 @@ namespace AZ{
 		}
 		
 		bool WINDOW::ChangeTitle(const std::string title){
+			_Title = title;
 			return SetWindowTextA(GetHandle(), title.c_str());
 		}
 		bool WINDOW::ChangeTitle(const std::wstring title){
+			_TitleW = title;
 			return SetWindowTextW(GetHandle(), title.c_str());
 		}
 		
+		/*
+		WINDOW& SetMenu(const std::string menu){
+			_Menu = menu;
+		}
+		WINDOW& SetMenu(const std::wstring menu){
+			_MenuW = menu;
+		}
 		
+		std::string GetMenuA(){
+			return _Menu;
+		}
+		std::wstring GetMenuW(){
+			return _MenuW;
+		}
+		
+		bool ChangeMenu(const std::string){
+			return SetMenu
+		}
+		bool ChangeMenu(const std::wstring){
+			
+		}
+		*/
 		
 		WINDOW& WINDOW::Borderless(){
 			Border = true;
@@ -506,7 +383,7 @@ namespace AZ{
 		}
 		
 		void WINDOW::Create(){
-			if(Mode.isUnicode()){
+			if(Unicode.is()){
 				hwnd = CreateWindowExW(
 					_ExStyle,
 					lpszClassNameW.c_str(), _TitleW.c_str(),
@@ -604,10 +481,16 @@ namespace AZ{
 			DEBUG::DebugConsole::Get_Instance().Log("Set Child");
 			#endif
 			ch.SetWindowStyle(ch.GetWindowStyle() | WS_CHILD);
-			ch.SetMenu(Id);
+			ch.SetMenuId(Id);
 			ChildWindow.push_back(std::pair<HMENU, WINDOW*>(Id,&ch));
 		}
-		void WINDOW::SetMenu(const HMENU Id){
+		void WINDOW::Child(bool f){
+			f ? _WindowStyle | WS_CHILD : _WindowStyle & ~WS_CHILD;
+		}
+		bool WINDOW::Child(){
+			return 
+		}
+		void WINDOW::SetMenuId(const HMENU Id){
 			Menu = Id;
 		}
 		
@@ -647,32 +530,53 @@ namespace AZ{
 			case WM_COMMAND:
 				switch(LOWORD(wp)){
 				case AZ_RELATIVE_SIZE:
-					if(ERELATIVESIZE(hwnd, msg, wp, lp)) return EBack(hwnd, msg, wp, lp);
+					if(_ERELATIVESIZE(hwnd, msg, wp, lp)) return EBack(hwnd, msg, wp, lp);
 				}
-				if(UNIQMSG(hwnd, msg, wp, lp)) return EBack(hwnd, msg, wp, lp);
-				if(ECOMMAND(hwnd, msg, wp, lp)) return EBack(hwnd, msg, wp, lp);
+				if(_EVENT(hwnd, msg, wp, lp, &_CHILDMSG, &CHILDMSG)) return EBack(hwnd, msg, wp, lp);
+				if(_EVENT(hwnd, msg, wp, lp, &_ECOMMAND, &ECOMMAND)) return EBack(hwnd, msg, wp, lp);
 				return 0;
 			
-			//create
+			//CREATE
 			case WM_CREATE:
-				#ifdef AZ_DEBUG
+				#if AZ_DEBUG > 0
 				DEBUG::DebugConsole::Get_Instance().Log("Proc Called Create");
 				#endif
-				return ECREATE(hwnd, msg, wp, lp)? EBack(hwnd, msg, wp, lp) : 0;
+				return _EVENT(hwnd, msg, wp, lp, &_ECREATE, &ECREATE)? EBack(hwnd, msg, wp, lp) : 0;
 			
 			
-			//button (throw down)
+			//MOUSE (throw down)
 			case WM_LBUTTONDBLCLK:
-			case WM_LBUTTONDOWN:
-			case WM_LBUTTONUP:
 			case WM_MBUTTONDBLCLK:
-			case WM_MBUTTONDOWN:
-			case WM_MBUTTONUP:
 			case WM_RBUTTONDBLCLK:
+			
+			case WM_NCLBUTTONDBLCLK:
+			case WM_NCMBUTTONDBLCLK:
+			case WM_NCRBUTTONDBLCLK:
+				return _EVENT(hwnd, msg, wp, lp, &_EDCLICK, &EDCLICK)? EBack(hwnd, msg, wp, lp) : 0;
+			
+			case WM_LBUTTONDOWN:
+			case WM_MBUTTONDOWN:
 			case WM_RBUTTONDOWN:
+			
+			case WM_NCLBUTTONDOWN:
+			case WM_NCMBUTTONDOWN:
+			case WM_NCRBUTTONDOWN:
+				SetTimer(GetHandle(), msg, GetDoubleClickTime(), NULL);
+				_mouse.wp = wp;
+				_mouse.lp = lp;
+				return _EVENT(hwnd, msg, wp, lp, &_EMDOWN, &EMDOWN)? EBack(hwnd, msg, wp, lp) : 0;
+			
+			case WM_LBUTTONUP:
+			case WM_MBUTTONUP:
 			case WM_RBUTTONUP:
+			
+			case WM_NCLBUTTONUP:
+			case WM_NCMBUTTONUP:
+			case WM_NCRBUTTONUP:
+				return _EVENT(hwnd, msg, wp, lp, &_EMUP, &EMUP)? EBack(hwnd, msg, wp, lp) : 0;
+			
 			case WM_MOUSEMOVE:
-				return EMOUSE(hwnd, msg, wp, lp)? EBack(hwnd, msg, wp, lp) : 0;
+				return _EVENT(hwnd, msg, wp, lp, &_EMOUSE, &EMOUSE)? EBack(hwnd, msg, wp, lp) : 0;
 			
 			//MDI (throw down)
 			case WM_MDIACTIVATE:
@@ -685,108 +589,99 @@ namespace AZ{
 			case WM_MDINEXT:
 			case WM_MDIRESTORE:
 			case WM_MDITILE:
-				return EMDI(hwnd, msg, wp, lp)? EBack(hwnd, msg, wp, lp) : 0;
+				return _EVENT(hwnd, msg, wp, lp, &_EMDI, &EMDI)? EBack(hwnd, msg, wp, lp) : 0;
 				
 			//NC (throw down)
 			case WM_NCDESTROY:
-				return ENCDESTROY(hwnd, msg, wp, lp)? EBack(hwnd, msg, wp, lp) : 0;
+				return _EVENT(hwnd, msg, wp, lp, &_ENCDESTROY, &ENCDESTROY)? EBack(hwnd, msg, wp, lp) : 0;
 				
 			//NC HITTEST
 			case WM_NCHITTEST:
-				return ENCHITTEST(hwnd, msg, wp, lp)? EBack(hwnd, msg, wp, lp) : 0;
+				return _EVENT(hwnd, msg, wp, lp, &_ENCHITTEST, &ENCHITTEST)? EBack(hwnd, msg, wp, lp) : 0;
 			
 			//NC MOUSE (throw down)
-			case WM_NCLBUTTONDBLCLK:
-			case WM_NCLBUTTONDOWN:
-			case WM_NCLBUTTONUP:
-			case WM_NCMBUTTONDBLCLK:
-			case WM_NCMBUTTONDOWN:
-			case WM_NCMBUTTONUP:
-			case WM_NCRBUTTONDBLCLK:
-			case WM_NCRBUTTONDOWN:
-			case WM_NCRBUTTONUP:
 			case WM_NCMOUSEMOVE:
-				return ENCMOUSE(hwnd, msg, wp, lp)? EBack(hwnd, msg, wp, lp) : 0;
+				return _EVENT(hwnd, msg, wp, lp, &_ENCMOUSE, &ENCMOUSE)? EBack(hwnd, msg, wp, lp) : 0;
+			
 			
 			//DROP
 			case WM_DROPFILES:
-				return EFILE(hwnd, msg, wp, lp)? EBack(hwnd, msg, wp, lp) : 0;
+				return _EVENT(hwnd, msg, wp, lp, &_EFILE, &EFILE)? EBack(hwnd, msg, wp, lp) : 0;
 			
 			//EDIT BOX or COMBO BOX (throw down)
 			case WM_CLEAR:
 			case WM_COPY:
 			case WM_CUT:
 			case WM_PASTE:
-				return EEDIT(hwnd, msg, wp, lp)? EBack(hwnd, msg, wp, lp) : 0;
+				return _EVENT(hwnd, msg, wp, lp, &_EEDIT, &EEDIT)? EBack(hwnd, msg, wp, lp) : 0;
 			
 			//CHAR CODE (throw down)
 			case WM_CHAR:
 			case WM_DEADCHAR:
 			case WM_SYSCHAR:
 			case WM_SYSDEADCHAR:
-				return ECHAR(hwnd, msg, wp, lp)? EBack(hwnd, msg, wp, lp) : 0;
+				return _EVENT(hwnd, msg, wp, lp, &_ECHAR, &ECHAR)? EBack(hwnd, msg, wp, lp) : 0;
 			
 			//KEY (throw down)
 			case WM_KEYDOWN:
 			case WM_KEYUP:
 			case WM_SYSKEYDOWN:
 			case WM_SYSKEYUP:
-				return EKEY(hwnd, msg, wp, lp)? EBack(hwnd, msg, wp, lp) : 0;
+				return _EVENT(hwnd, msg, wp, lp, &_EKEY, &EKEY)? EBack(hwnd, msg, wp, lp) : 0;
 			
 			case WM_CLOSE:
-				return ECLOSE(hwnd, msg, wp, lp)? EBack(hwnd, msg, wp, lp) : 0;
+				return _EVENT(hwnd, msg, wp, lp, &_ECLOSE, &ECLOSE)? EBack(hwnd, msg, wp, lp) : 0;
 				
 			case WM_DESTROY:
-				return EDESTROY(hwnd, msg, wp, lp)? EBack(hwnd, msg, wp, lp) : 0;
+				return _EVENT(hwnd, msg, wp, lp, &_EDESTROY, &EDESTROY)? EBack(hwnd, msg, wp, lp) : 0;
 				
 			case WM_QUIT:
-				return EQUIT(hwnd, msg, wp, lp)? EBack(hwnd, msg, wp, lp) : 0;
+				return _EVENT(hwnd, msg, wp, lp, &_EQUIT, &EQUIT)? EBack(hwnd, msg, wp, lp) : 0;
 			
 			//SCROLL (throw down)
 			case WM_HSCROLL:
 			case WM_VSCROLL:
-				return ESCROLL(hwnd, msg, wp, lp)? EBack(hwnd, msg, wp, lp) : 0;
+				return _EVENT(hwnd, msg, wp, lp, &_ESCROLL, &ESCROLL)? EBack(hwnd, msg, wp, lp) : 0;
 				
 			//STATE (throw down)
 			case WM_ENABLE:
 			case WM_SHOWWINDOW:
-				return ESTATE(hwnd, msg, wp, lp)? EBack(hwnd, msg, wp, lp) : 0;
+				return _EVENT(hwnd, msg, wp, lp, &_ESTATE, &ESTATE)? EBack(hwnd, msg, wp, lp) : 0;
 				
 			//FOCUS (throw down)
 			case WM_KILLFOCUS:
 			case WM_SETFOCUS:
-				return EFOCUS(hwnd, msg, wp, lp)? EBack(hwnd, msg, wp, lp) : 0;
+				return _EVENT(hwnd, msg, wp, lp, &_EFOCUS, &EFOCUS)? EBack(hwnd, msg, wp, lp) : 0;
 				
 			//MOVE
 			case WM_MOVE:
-				return EMOVE(hwnd, msg, wp, lp)? EBack(hwnd, msg, wp, lp) : 0;
+				return _EVENT(hwnd, msg, wp, lp, &_EMOVE, &EMOVE)? EBack(hwnd, msg, wp, lp) : 0;
 				
 			//SIZE
 			case WM_SIZE:
-				_ESIZE(hwnd, msg, wp, lp);
-				return ESIZE(hwnd, msg, wp, lp)? EBack(hwnd, msg, wp, lp) : 0;
+				return _EVENT(hwnd, msg, wp, lp, &_ESIZE, &ESIZE)? EBack(hwnd, msg, wp, lp) : 0;
 			
 			//TEXT (throw down)
 			case WM_SETTEXT:
 			case WM_GETTEXT:
 			case WM_GETTEXTLENGTH:
-				return ENCMOUSE(hwnd, msg, wp, lp)? EBack(hwnd, msg, wp, lp) : 0;
+				return _EVENT(hwnd, msg, wp, lp, &_ENCMOUSE, &ENCMOUSE)? EBack(hwnd, msg, wp, lp) : 0;
 			
 			//MENU (throw down)
 			case WM_INITMENU:
 			case WM_INITMENUPOPUP:
 			case WM_MENUCHAR:
 			case WM_MENUSELECT:
-				return EMENU(hwnd, msg, wp, lp)? EBack(hwnd, msg, wp, lp) : 0;
+				return _EVENT(hwnd, msg, wp, lp, &_EMENU, &EMENU)? EBack(hwnd, msg, wp, lp) : 0;
 				
 			//ITEM (throw down)
 			case WM_MEASUREITEM:
 			case WM_DRAWITEM:
-				return EITEM(hwnd, msg, wp, lp)? EBack(hwnd, msg, wp, lp) : 0;
+				return _EVENT(hwnd, msg, wp, lp, &_EITEM, &EITEM)? EBack(hwnd, msg, wp, lp) : 0;
 				
 			case WM_ERASEBKGND:
-				if(Mode.isDBuff() == true) return 1;
-				return EBKG(hwnd, msg, wp, lp)? EBack(hwnd, msg, wp, lp) : 0;
+				if(DBuff.is() == true) return 1;
+				return _EVENT(hwnd, msg, wp, lp, &_EBKG, &EBKG)? EBack(hwnd, msg, wp, lp) : 0;
 			
 			case WM_PAINT:
 				#ifdef AZ_DEBUG
@@ -812,7 +707,7 @@ namespace AZ{
 				break;
 				
 			case WM_TIMER:
-				return ETIMER(hwnd, msg, wp, lp)? EBack(hwnd, msg, wp, lp) : 0;
+				return _EVENT(hwnd, msg, wp, lp, &_ETIMER, &ETIMER)? EBack(hwnd, msg, wp, lp) : 0;
 			
 			default:
 				return CustomMsg(hwnd, msg, wp, lp)? EBack(hwnd, msg, wp, lp) : 0;
@@ -856,7 +751,7 @@ namespace AZ{
 				#ifdef AZ_DEBUG
 				DEBUG::DebugConsole::Get_Instance().Log("EntryProc is setting");
 				#endif
-				if(Mode.isUnicode()){
+				if(Unicode.is()){
 					if(lpfnWndProc != EntryProcW){
 						//本来のプロシージャをDefProcに格納
 						DefProc = (WNDPROC)(LONG_PTR)GetWindowLongPtrW(hwnd, GWLP_WNDPROC);
@@ -870,49 +765,39 @@ namespace AZ{
 					}
 				}
 				else{
-					if(lpfnWndProc != EntryProc){
+					if(lpfnWndProc != EntryProcA){
 						DefProc = (WNDPROC)(LONG_PTR)GetWindowLongPtr(hwnd, GWLP_WNDPROC);
 						if(DefProc == 0){
 							#ifdef AZ_DEBUG
 							DEBUG::error_dialog(NULL);
 							#endif
 						}
-						SetWindowLongPtr(hwnd, GWLP_WNDPROC, (LONG_PTR)EntryProc);
+						SetWindowLongPtr(hwnd, GWLP_WNDPROC, (LONG_PTR)EntryProcA);
 					}
 				}
 			}
 			#ifdef AZ_DEBUG
 			DEBUG::DebugConsole::Get_Instance().Log("-- Set DefProc ----------");
-			DEBUG::DebugConsole::Get_Instance().Log(GetTitleNameW());
+			DEBUG::DebugConsole::Get_Instance().Log(GetTitleW());
 			DEBUG::DebugConsole::Get_Instance().Log((LPVOID)hwnd);
 			DEBUG::DebugConsole::Get_Instance().Log((LPVOID)DefProc);
 			DEBUG::DebugConsole::Get_Instance().Log("-------------------------");
 			#endif
 		}
 		
-		void WINDOW::_ESIZE(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){
+		CODE WINDOW::_ESIZE(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){
 			if(LOWORD(lp) != GetSize()[0] && HIWORD(lp) != GetSize()[1]){
 				SetSize(LOWORD(lp), HIWORD(lp));
 				for(auto v : ChildWindow){
-					if(v.second->Mode.isRelativeSize() == true){
+					if(v.second->AutoReSize.is() == true){
 						SendMessage(v.second->GetHandle(), WM_COMMAND, 0 | AZ_RELATIVE_SIZE, 0);
 					}
 				}
 			}
+			return DEFAULTEVE;
 		}
 		
 		CODE WINDOW::ECREATE(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){return 1;}
-		CODE WINDOW::_EPAINT(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){
-			CODE ret = EPAINT(hwnd, msg, wp, lp);
-			if(ret == 1 && LayoutFuncP != nullptr){
-				PAINTSTRUCT ps;
-				HDC hdc = BeginPaint(hwnd, &ps);
-				ret = LayoutFuncP(hdc);
-				EndPaint(hwnd, &ps);
-			}
-
-			return ret;
-		}
 		CODE WINDOW::EPAINT(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){return 1;}
 		CODE WINDOW::ECLOSE(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){
 			if(MessageBoxW(GetParentHandle(), L"終了しますか?", L"確認画面", MB_YESNO) != IDYES) return 0;
@@ -945,16 +830,63 @@ namespace AZ{
 		CODE WINDOW::ESTATE(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){return DEFAULTEVE;}
 		CODE WINDOW::EFILE(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){return DEFAULTEVE;}
 		CODE WINDOW::EBKG(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){return DEFAULTEVE;}
+		CODE WINDOW::ECLICK(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){return DEFAULTEVE;}
+		CODE WINDOW::EDCLICK(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){return DEFAULTEVE;}
+		CODE WINDOW::EMDOWN(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){return DEFAULTEVE;}
+		CODE WINDOW::EMUP(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){return DEFAULTEVE;}
+		CODE WINDOW::EHOLD(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){return DEFAULTEVE;}
 		CODE WINDOW::ERELATIVESIZE(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){return DEFAULTEVE;}
+		
+		
+		CODE WINDOW::_ECREATE(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){return 1;}
+		CODE WINDOW::_EPAINT(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){
+			CODE ret = EPAINT(hwnd, msg, wp, lp);
+			if(ret == 1 && LayoutFuncP != nullptr){
+				PAINTSTRUCT ps;
+				HDC hdc = BeginPaint(hwnd, &ps);
+				ret = LayoutFuncP(hdc);
+				EndPaint(hwnd, &ps);
+			}
+			return ret;
+		}
+		CODE WINDOW::_ECLOSE(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){return DEFAULTEVE;}
+		CODE WINDOW::_EDESTROY(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){return DEFAULTEVE;}
+		CODE WINDOW::_ECOMMAND(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){return DEFAULTEVE;}
+		CODE WINDOW::_EMOUSE(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){return DEFAULTEVE;}
+		CODE WINDOW::_EMDI(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){return DEFAULTEVE;}
+		CODE WINDOW::_ENCDESTROY(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){return DEFAULTEVE;}
+		CODE WINDOW::_ENCHITTEST(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){return DEFAULTEVE;}
+		CODE WINDOW::_ENCMOUSE(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){return DEFAULTEVE;}
+		CODE WINDOW::_EEDIT(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){return DEFAULTEVE;}
+		CODE WINDOW::_ECHAR(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){return DEFAULTEVE;}
+		CODE WINDOW::_EKEY(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){return DEFAULTEVE;}
+		CODE WINDOW::_EQUIT(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){return DEFAULTEVE;}
+		CODE WINDOW::_ESCROLL(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){return DEFAULTEVE;}
+		CODE WINDOW::_EACTIVE(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){return DEFAULTEVE;}
+		CODE WINDOW::_EFOCUS(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){return DEFAULTEVE;}
+		CODE WINDOW::_EMOVE(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){return DEFAULTEVE;}
+		CODE WINDOW::_ETEXT(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){return DEFAULTEVE;}
+		CODE WINDOW::_EMENU(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){return DEFAULTEVE;}
+		CODE WINDOW::_EITEM(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){return DEFAULTEVE;}
+		CODE WINDOW::_ESTATE(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){return DEFAULTEVE;}
+		CODE WINDOW::_EFILE(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){return DEFAULTEVE;}
+		CODE WINDOW::_EBKG(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){return DEFAULTEVE;}
+		CODE WINDOW::_ECLICK(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){return DEFAULTEVE;}
+		CODE WINDOW::_EDCLICK(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){return DEFAULTEVE;}
+		CODE WINDOW::_EMUP(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){return DEFAULTEVE;}
+		CODE WINDOW::_EMDOWN(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){return DEFAULTEVE;}
+		CODE WINDOW::_EHOLD(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){return DEFAULTEVE;}
+		CODE WINDOW::_ERELATIVESIZE(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){return DEFAULTEVE;}
+		
+		
 		LRESULT CALLBACK WINDOW::EBack(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){
-			if(Mode.isUnicode()){
+			if(Unicode.is()){
 				return CallWindowProcW(DefProc, hwnd, msg, wp, lp);
 			}
 			else return CallWindowProc(DefProc, hwnd, msg, wp, lp);
 		}
 		
-		CODE WINDOW::UNIQMSG(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){
-			
+		CODE WINDOW::_CHILDMSG(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){
 			if(ChildWindow.size() != 0){
 				#ifdef AZ_DEBUG
 				DEBUG::DebugConsole::Get_Instance().Log("-- Child Size -----------");
@@ -967,11 +899,11 @@ namespace AZ{
 						DEBUG::DebugConsole::Get_Instance().Log((LPVOID)LOWORD(wp));
 						DEBUG::DebugConsole::Get_Instance().Log((LPVOID)v.first);
 						std::wstring tmp = L"pass -> ";
-						tmp += v.second->GetTitleNameW();
+						tmp += v.second->GetTitleW();
 						DEBUG::DebugConsole::Get_Instance().Log(tmp);
 						DEBUG::DebugConsole::Get_Instance().Log("-------------------------");
 						#endif
-						return v.second->EVENT(v.second->GetHandle(), msg, wp, lp);
+						return v.second->CHILDMSG(v.second->GetHandle(), msg, wp, lp);
 					}
 				}
 				#ifdef AZ_DEBUG
@@ -981,7 +913,34 @@ namespace AZ{
 			return DEFAULTEVE;
 		}
 		CODE WINDOW::CustomMsg(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){return DEFAULTEVE;}
-		CODE WINDOW::EVENT(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){return DEFAULTEVE;}
+		CODE WINDOW::CHILDMSG(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){return DEFAULTEVE;}
+		
+		CODE WINDOW::_EVENT(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp,
+			CODE (WINDOW::*system)(const HWND, const UINT, const WPARAM, const LPARAM),
+			CODE (WINDOW::*eve)(const HWND, const UINT, const WPARAM, const LPARAM)){
+			
+			evep = system;
+			(this->*evep)(hwnd, msg, wp, lp);
+			evep = eve;
+			return (this->*evep)(hwnd, msg, wp, lp);
+		}
+		
+		CODE WINDOW::_ETIMER(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){
+			if(wp == WM_RBUTTONDOWN || wp == WM_MBUTTONDOWN || wp == WM_LBUTTONDOWN){
+				switch(wp){
+				case WM_RBUTTONDOWN:
+					SendMessage(hwnd, EV_RCLICK, _mouse.wp, _mouse.lp);
+					break;
+				case WM_MBUTTONDOWN:
+					SendMessage(hwnd, EV_MCLICK, _mouse.wp, _mouse.lp);
+					break;
+				case WM_LBUTTONDOWN:
+					SendMessage(hwnd, EV_LCLICK, _mouse.wp, _mouse.lp);
+					break;
+				}
+			}
+			return DEFAULTEVE;
+		}
 		
 		void WINDOW::Layout(CODE (*LayoutFunc)(HDC)){
 			LayoutFuncP = LayoutFunc;
@@ -1001,42 +960,30 @@ namespace AZ{
 		
 		//修正したい
 		int WINDOW::Message(){
-			if(Mode.isUnicode()){
-				while(1){
-					if(PeekMessageW(&msg, NULL, 0, 0, PM_REMOVE)){
-						if(msg.message == WM_QUIT) break;
-						TranslateMessage(&msg);
-						DispatchMessageW(&msg);
-					} else{
-						if(_GameLoopP != nullptr){
-							_GameLoopP(GameLoopArgs);
-							
+			while(1){
+				if(Unicode.is()? PeekMessageW(&msg, NULL, 0, 0, PM_REMOVE) : PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)){
+					if(msg.message == WM_QUIT) break;
+					TranslateMessage(&msg);
+					Unicode.is()? DispatchMessageW(&msg) : DispatchMessage(&msg);
+				} else{
+					
+					//GetTime
+					//Sleep
+					//Send GameLoop message
+					
+					
+					if(_GameLoopP != nullptr){
+						_GameLoopP(GameLoopArgs);
+						
+						if(1){
 							InvalidateRect(GetHandle(), NULL, true);
 							UpdateWindow(GetHandle());
 						}
-						Wait();
 					}
+					if(_WaitP != nullptr) _WaitP(WaitArgs);
+					else Wait();
 				}
 			}
-			else{
-				while(1){
-					if(PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)){
-						if(msg.message == WM_QUIT) break;
-						TranslateMessage(&msg);
-						DispatchMessage(&msg);
-					} else{
-						if(_GameLoopP != nullptr){
-							_GameLoopP(GameLoopArgs);
-							
-							InvalidateRect(GetHandle(), NULL, true);
-							UpdateWindow(GetHandle());
-						}
-						Wait();
-					}
-				}
-			}
-			
-			
 			return (int)msg.wParam;
 		}
 		
@@ -1045,11 +992,16 @@ namespace AZ{
 			GameLoopArgs = _args;
 		}
 		
+		void WINDOW::Wait(void (*_Waitp)(LPVOID), LPVOID _args){
+			_WaitP = _Waitp;
+			WaitArgs = _args;
+		}
+		
 		void WINDOW::Print(){
 			#ifdef AZ_DEBUG
 			DEBUG::DebugConsole::Get_Instance().Log("start create");
 			DEBUG::DebugConsole::Get_Instance().Log(_ExStyle);
-			if(Mode.isUnicode()){
+			if(Unicode.is()){
 				DEBUG::DebugConsole::Get_Instance().Log(lpszClassNameW.c_str());
 			} else{
 				DEBUG::DebugConsole::Get_Instance().Log(lpszClassName.c_str());
@@ -1063,7 +1015,14 @@ namespace AZ{
 			#endif
 		}
 		
+		MOUSE WINDOW::_mouse;
+		
 		std::function<long long(void)> WINDOW::CurrentTimeMicro = [](){
+			std::chrono::system_clock::duration d = std::chrono::system_clock::now().time_since_epoch();
+			return std::chrono::duration_cast<std::chrono::microseconds>(d).count();
+		};
+		
+		std::function<long long(void)> WINDOW::CurrentTimeMilli = [](){
 			std::chrono::system_clock::duration d = std::chrono::system_clock::now().time_since_epoch();
 			return std::chrono::duration_cast<std::chrono::microseconds>(d).count();
 		};
@@ -1072,11 +1031,23 @@ namespace AZ{
 			FrameRate = rate;
 		}
 		void WINDOW::Wait(){
-			long long Now = CurrentTimeMicro();
-			if(WaitToNextTime > Now){
-				std::this_thread::sleep_for(std::chrono::microseconds(WaitToNextTime - Now));
+			_now = CurrentTimeMilli();
+			if(WaitToNextTime > _now){
+				_wait = WaitToNextTime - _now;
+				std::this_thread::sleep_for(std::chrono::milliseconds(_wait));
 			}
-			WaitToNextTime = CurrentTimeMicro() + 1000 * 1000 / FrameRate;
+			WaitToNextTime = CurrentTimeMilli() + 1000 / FrameRate;
 		}
+		
+		void WINDOW::InitLambda(){
+			LayoutFuncP = nullptr;
+			_GameLoopP = nullptr;
+			_WaitP = nullptr;
+		}
+		
+		long long WINDOW::GetWait(){return _wait;}
+		long long WINDOW::GetNow(){return _now;}
+		long long WINDOW::GetNext(){return WaitToNextTime;}
+		
 	}
 }

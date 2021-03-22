@@ -1,5 +1,4 @@
-#ifndef __GUI_HPP__
-#define __GUI_HPP__
+#pragma once
 
 #include<windows.h>
 #include<gdiplus.h>
@@ -19,6 +18,7 @@
 #include"../WCLASS/wclass.hpp"
 #include"../PAINT/paint.hpp"
 #include"../EVENT/event.hpp"
+#include"../UTIL/utility.hpp"
 
 #define WINDOW_CHILD 0xffff
 
@@ -32,7 +32,7 @@ namespace AZ{
 		
 		class WINDOW;
 		
-		class PROCMAP : public SINGLETON::Singleton<PROCMAP>{
+		class PROCMAP : public UTIL::Singleton<PROCMAP>{
 			std::map<HWND, WINDOW*> hWndMap;
 		public:
 			PROCMAP();
@@ -67,13 +67,17 @@ namespace AZ{
 			std::string lpszClassName;
 			std::wstring lpszClassNameW;
 			
+			void InitWindowClass();
+			void InitFrameRate(int);
+			
 			//function pointer
 			using WPROC = LRESULT (WINDOW::*)(HWND, UINT, WPARAM, LPARAM);
 			WPROC Proc;
-			static LRESULT CALLBACK EntryProc(HWND, UINT, WPARAM, LPARAM);
+			static LRESULT CALLBACK EntryProcA(HWND, UINT, WPARAM, LPARAM);
 			static LRESULT CALLBACK EntryProcW(HWND, UINT, WPARAM, LPARAM);
 			
 		public:
+			//window class option
 			WINDOW& WClassSize(const UINT);
 			WINDOW& WClassStyle(const UINT);
 			WINDOW& WClassWndProc(WNDPROC);
@@ -92,27 +96,48 @@ namespace AZ{
 			std::string GetClassNameA();
 			std::wstring GetClassNameW();
 			
+			//register window
 			WINDOW& Register();
 			
 			LRESULT MyProc(HWND, UINT, WPARAM, LPARAM);
 			
-			
+			//state of option
+			// Is using UNICODE?
+			// Is using Double Buffering?
+			// Is using Reative Sizing?
+			// Is using Double click?
+			/*
 			class MODE{
-				WINDOW *_pWindow;
+				WINDOW *_pWindow; //???
 				bool _Unicode;
 				bool _DBuff;
 				bool _RelativeSize;
+				bool _DClick;
 			public:
 				MODE(WINDOW*);
 				~MODE();
-				void Unicode(const bool);
-				void DBuff(const bool);
-				void RelativeSize(const bool);
+				void EnableUnicode(const bool);
+				void EnableDBuff(const bool);
+				void EnableRelativeSize(const bool);
+				void EnableDClick(const bool);
 				
 				bool isUnicode();
 				bool isDBuff();
 				bool isRelativeSize();
+				bool isDClick();
+				
 			} Mode;
+			*/
+			class MODE{
+				WINDOW *wp;
+				bool state;
+			public:
+				MODE(WINDOW*);
+				~MODE();
+				
+				void Enable(bool);
+				bool is();
+			} Unicode, DBuff, DClick, AutoReSize;
 			
 		protected:
 			const WNDCLASSEX GetWcex();
@@ -124,6 +149,11 @@ namespace AZ{
 			std::string _Title;
 			std::wstring _TitleW;
 			
+			/*
+			std::string _Menu;
+			std::wstring _MenuW;
+			*/
+			
 		public:
 			WINDOW& SetTitle(const std::string);
 			WINDOW& SetTitle(const std::wstring);
@@ -134,6 +164,16 @@ namespace AZ{
 			bool ChangeTitle(const std::string);
 			bool ChangeTitle(const std::wstring);
 			
+			/*
+			WINDOW& SetMenu(const std::string);
+			WINDOW& SetMenu(const std::wstring);
+			
+			std::string GetMenuA();
+			std::wstring GetMenuW();
+			
+			bool ChangeMenu(const std::string);
+			bool ChangeMenu(const std::wstring);
+			*/
 		// STYLE
 		protected:
 			DWORD _ExStyle;
@@ -159,9 +199,13 @@ namespace AZ{
 			WINDOW();
 			WINDOW(const int, const int);
 			WINDOW(const int, const int, const std::string);
+			WINDOW(const int, const int, const std::string, const std::string);
 			WINDOW(const int, const int, const std::wstring);
+			WINDOW(const int, const int, const std::wstring, const std::wstring);
 			WINDOW(const std::string);
+			WINDOW(const std::string, const std::string);
 			WINDOW(const std::wstring);
+			WINDOW(const std::wstring, const std::wstring);
 			virtual ~WINDOW();
 			
 			WINDOW& WindowSize(const int, const int);
@@ -180,7 +224,10 @@ namespace AZ{
 			void Create(const std::wstring);
 			
 			void Child(WINDOW&, const HMENU);
-			void SetMenu(const HMENU);
+			void Child(bool);
+			bool isChild();
+			
+			void SetMenuId(const HMENU);
 			
 			LRESULT WindowProc(HWND, UINT, WPARAM, LPARAM);
 			using PROC = LRESULT (*)(HWND, UINT, WPARAM, LPARAM);
@@ -205,7 +252,8 @@ namespace AZ{
 			void SetParentHandle(const HWND);
 			
 			
-			
+		private:
+			static MOUSE _mouse;
 			
 		private:
 			bool RegisterFlag;
@@ -218,8 +266,9 @@ namespace AZ{
 			void ESetProc();
 			std::array<CODE (WINDOW::*)(const HWND, const UINT, const WPARAM, const LPARAM), 24> CodeFuncArray;
 			
-			void _ESIZE(const HWND, const UINT, const WPARAM, const LPARAM);
+			CODE _ESIZE(const HWND, const UINT, const WPARAM, const LPARAM);
 			
+			// virtual event function
 			virtual CODE ECREATE(const HWND, const UINT, const WPARAM, const LPARAM);
 			virtual CODE ECLOSE(const HWND, const UINT, const WPARAM, const LPARAM);
 			virtual CODE EDESTROY(const HWND, const UINT, const WPARAM, const LPARAM);
@@ -246,40 +295,92 @@ namespace AZ{
 			virtual CODE EFILE(const HWND, const UINT, const WPARAM, const LPARAM);
 			virtual CODE EBKG(const HWND, const UINT, const WPARAM, const LPARAM);
 			virtual CODE ERELATIVESIZE(const HWND, const UINT, const WPARAM, const LPARAM);
+			virtual CODE ECLICK(const HWND, const UINT, const WPARAM, const LPARAM);
+			virtual CODE EDCLICK(const HWND, const UINT, const WPARAM, const LPARAM);
+			virtual CODE EMDOWN(const HWND, const UINT, const WPARAM, const LPARAM);
+			virtual CODE EMUP(const HWND, const UINT, const WPARAM, const LPARAM);
+			virtual CODE EHOLD(const HWND, const UINT, const WPARAM, const LPARAM);
+			virtual CODE EPAINT(const HWND, const UINT, const WPARAM, const LPARAM);
 			LRESULT CALLBACK EBack(const HWND, const UINT, const WPARAM, const LPARAM);
 			
+			// ここら辺はきれいにしたい
 			virtual CODE CustomMsg(const HWND, const UINT, const WPARAM, const LPARAM);
-			CODE UNIQMSG(const HWND, const UINT, const WPARAM, const LPARAM);
-			virtual CODE EVENT(const HWND, const UINT, const WPARAM, const LPARAM);
+			CODE _CHILDMSG(const HWND, const UINT, const WPARAM, const LPARAM);
+			virtual CODE CHILDMSG(const HWND, const UINT, const WPARAM, const LPARAM);
 			
+			// 緩衝材
+			CODE _EVENT(const HWND, const UINT, const WPARAM, const LPARAM,
+				CODE (WINDOW::*)(const HWND, const UINT, const WPARAM, const LPARAM),
+				CODE (WINDOW::*)(const HWND, const UINT, const WPARAM, const LPARAM));
+			CODE _ECREATE(const HWND, const UINT, const WPARAM, const LPARAM);
+			CODE _ECLOSE(const HWND, const UINT, const WPARAM, const LPARAM);
+			CODE _EDESTROY(const HWND, const UINT, const WPARAM, const LPARAM);
+			CODE _ECOMMAND(const HWND, const UINT, const WPARAM, const LPARAM);
+			CODE _EMOUSE(const HWND, const UINT, const WPARAM, const LPARAM);
+			CODE _EMDI(const HWND, const UINT, const WPARAM, const LPARAM);
+			CODE _ENCDESTROY(const HWND, const UINT, const WPARAM, const LPARAM);
+			CODE _ENCHITTEST(const HWND, const UINT, const WPARAM, const LPARAM);
+			CODE _ENCMOUSE(const HWND, const UINT, const WPARAM, const LPARAM);
+			CODE _EEDIT(const HWND, const UINT, const WPARAM, const LPARAM);
+			CODE _ECHAR(const HWND, const UINT, const WPARAM, const LPARAM);
+			CODE _EKEY(const HWND, const UINT, const WPARAM, const LPARAM);
+			CODE _EQUIT(const HWND, const UINT, const WPARAM, const LPARAM);
+			CODE _ESCROLL(const HWND, const UINT, const WPARAM, const LPARAM);
+			CODE _EACTIVE(const HWND, const UINT, const WPARAM, const LPARAM);
+			CODE _EFOCUS(const HWND, const UINT, const WPARAM, const LPARAM);
+			CODE _EMOVE(const HWND, const UINT, const WPARAM, const LPARAM);
+			CODE _ETEXT(const HWND, const UINT, const WPARAM, const LPARAM);
+			CODE _EMENU(const HWND, const UINT, const WPARAM, const LPARAM);
+			CODE _EITEM(const HWND, const UINT, const WPARAM, const LPARAM);
+			CODE _ETIMER(const HWND, const UINT, const WPARAM, const LPARAM);
+			CODE _ESTATE(const HWND, const UINT, const WPARAM, const LPARAM);
+			CODE _EFILE(const HWND, const UINT, const WPARAM, const LPARAM);
+			CODE _EBKG(const HWND, const UINT, const WPARAM, const LPARAM);
+			CODE _ERELATIVESIZE(const HWND, const UINT, const WPARAM, const LPARAM);
+			CODE _ECLICK(const HWND, const UINT, const WPARAM, const LPARAM);
+			CODE _EDCLICK(const HWND, const UINT, const WPARAM, const LPARAM);
+			CODE _EMDOWN(const HWND, const UINT, const WPARAM, const LPARAM);
+			CODE _EMUP(const HWND, const UINT, const WPARAM, const LPARAM);
+			CODE _EHOLD(const HWND, const UINT, const WPARAM, const LPARAM);
 			CODE _EPAINT(const HWND, const UINT, const WPARAM, const LPARAM);
-			virtual CODE EPAINT(const HWND, const UINT, const WPARAM, const LPARAM);
 			//std::vector< void(*)(HDC) > Layer;
+			
 			
 		//ラムダ関数群
 		public:
 			void Layout(CODE (*LayoutFunc)(HDC));
 			void GameLoop(void (*_GameLoop)(LPVOID), LPVOID);
 			void RegMsgCode(std::function< CODE(const HWND, const UINT, const WPARAM, const LPARAM) >, UINT _msg);
+			void Wait(void (*_Waitp)(LPVOID), LPVOID);
 		private:
 			std::function< int(HDC) > LayoutFuncP;
 			std::function< void(LPVOID) > _GameLoopP;
 			LPVOID GameLoopArgs;
+			std::function< void(LPVOID) > _WaitP;
+			LPVOID WaitArgs;
 			
+			CODE (WINDOW::*evep)(const HWND, const UINT, const WPARAM, const LPARAM);
+			
+			void InitLambda();
 		private:
 			long long WaitToNextTime;
 			int FrameRate;
 			
 			static std::function<long long(void)> CurrentTimeMicro;
+			static std::function<long long(void)> CurrentTimeMilli;
 		public:
 			void FPSLock(int);
 			void Wait();
+			long long _wait;
+			long long _now;
 			
 		//デバッグ
 		public:
 			void Print();
+			
+			long long GetWait();
+			long long GetNow();
+			long long GetNext();
 		};
 	}
 }
-
-#endif
