@@ -12,6 +12,8 @@
 #include<thread>
 #include<chrono>
 #include<functional>
+#include<algorithm>
+
 
 #include"../DEBUG/AzDebug.hpp"
 #include"../defines.hpp"
@@ -133,11 +135,12 @@ namespace AZ{
 				bool state;
 			public:
 				MODE(WINDOW*);
+				MODE(WINDOW*, bool);
 				~MODE();
 				
 				void Enable(bool);
 				bool is();
-			} Unicode, DBuff, DClick, AutoReSize;
+			} Unicode, DBuff, DBuffDIB, DClick, AutoReSize;
 			
 		protected:
 			const WNDCLASSEX GetWcex();
@@ -300,7 +303,7 @@ namespace AZ{
 			virtual CODE EMDOWN(const HWND, const UINT, const WPARAM, const LPARAM);
 			virtual CODE EMUP(const HWND, const UINT, const WPARAM, const LPARAM);
 			virtual CODE EHOLD(const HWND, const UINT, const WPARAM, const LPARAM);
-			virtual CODE EPAINT(const HWND, const UINT, const WPARAM, const LPARAM);
+			virtual CODE EPAINT(const HWND, const UINT, const WPARAM, const LPARAM, HDC);
 			LRESULT CALLBACK EBack(const HWND, const UINT, const WPARAM, const LPARAM);
 			
 			// ここら辺はきれいにしたい

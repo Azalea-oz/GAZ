@@ -49,6 +49,11 @@ namespace AZ{
 			HWND GetHandle();
 		};
 		
+		struct MOUSE{
+			WPARAM wp;
+			LPARAM lp;
+		};
+		
 		enum class EVENT_CODE : int{
 			COMMAND = 0,
 			CREATE = 1,

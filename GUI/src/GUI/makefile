@@ -6,7 +6,7 @@ RM = del
 
 .PHONY: obj
 obj: $(SRC)
-	g++ -c $(SRC) $(HPP)
+	g++ -c $(SRC) $(HPP) -std=c++17
 
 .PHONY: clean
 clean:

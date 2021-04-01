@@ -44,6 +44,10 @@ namespace AZ{
 			wp = w;
 			state = false;
 		}
+		WINDOW::MODE::MODE(WINDOW *w, bool f){
+			wp = w;
+			state = f;
+		}
 		WINDOW::MODE::~MODE(){}
 		void WINDOW::MODE::Enable(const bool flag){
 			state = flag;
@@ -73,8 +77,6 @@ namespace AZ{
 			
 			_ExStyle = WS_EX_ACCEPTFILES;
 			_WindowStyle = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
-			_Title = "Azalea Window";
-			_TitleW = L"Azalea Window";
 		}
 		
 		void WINDOW::InitFrameRate(int rate){
@@ -85,32 +87,36 @@ namespace AZ{
 		using CODE = int;
 		WINDOW* WINDOW::tmp = nullptr;
 		WINDOW::WINDOW() :
-			STATE(), Unicode(this), DBuff(this), DClick(this), AutoReSize(this),
+			STATE(), Unicode(this, true), DBuff(this), DBuffDIB(this), DClick(this), AutoReSize(this),
 			hwnd(nullptr), hparent(nullptr), Menu(NULL), RegisterFlag(false),
 			Border(false), Proc(&WINDOW::WindowProc){
-				Unicode.Enable(true);
 				tmp = this;
 				
 				InitWindowClass();
 				InitLambda();
 				InitCodeArray();
 				InitFrameRate(30);
+				
+				_Title = "Azalea Window";
+				_TitleW = L"Azalea Window";
 		}
 		WINDOW::WINDOW(const int w, const int h) : 
-			STATE(w, h), Unicode(this), DBuff(this), DClick(this), AutoReSize(this),
+			STATE(w, h), Unicode(this, true), DBuff(this), DBuffDIB(this), DClick(this), AutoReSize(this),
 			hwnd(nullptr), hparent(nullptr), Menu(NULL), RegisterFlag(false),
 			Border(false), Proc(&WINDOW::WindowProc){
-				Unicode.Enable(true);
 				tmp = this;
 				
 				InitWindowClass();
 				InitLambda();
 				InitCodeArray();
 				InitFrameRate(30);
+				
+				_Title = "Azalea Window";
+				_TitleW = L"Azalea Window";
 		}
 		
 		WINDOW::WINDOW(const int w, const int h, const std::string title) : 
-			STATE(w, h), Unicode(this), DBuff(this), DClick(this), AutoReSize(this),
+			STATE(w, h), Unicode(this), DBuff(this), DBuffDIB(this), DClick(this), AutoReSize(this),
 			hwnd(nullptr), hparent(nullptr), Menu(NULL), RegisterFlag(false),
 			Border(false), Proc(&WINDOW::WindowProc){
 				tmp = this;
@@ -119,21 +125,26 @@ namespace AZ{
 				InitLambda();
 				InitCodeArray();
 				InitFrameRate(30);
+				
+				_Title = title;
+				_TitleW = L"Azalea Window";
 		}
 		WINDOW::WINDOW(const int w, const int h, const std::wstring title) : 
-			STATE(w, h), Unicode(this), DBuff(this), DClick(this), AutoReSize(this),
+			STATE(w, h), Unicode(this, true), DBuff(this), DBuffDIB(this), DClick(this), AutoReSize(this),
 			hwnd(nullptr), hparent(nullptr), Menu(NULL), RegisterFlag(false),
 			Border(false), Proc(&WINDOW::WindowProc){
-				Unicode.Enable(true);
 				tmp = this;
 				
 				InitWindowClass();
 				InitLambda();
 				InitCodeArray();
 				InitFrameRate(30);
+				
+				_Title = "Azalea Window";
+				_TitleW = title;
 		}
 		WINDOW::WINDOW(const std::string title) : 
-			STATE(), Unicode(this), DBuff(this), DClick(this), AutoReSize(this),
+			STATE(), Unicode(this), DBuff(this), DBuffDIB(this), DClick(this), AutoReSize(this),
 			hwnd(nullptr), hparent(nullptr), Menu(NULL), RegisterFlag(false),
 			Border(false), Proc(&WINDOW::WindowProc){
 				tmp = this;
@@ -142,18 +153,23 @@ namespace AZ{
 				InitLambda();
 				InitCodeArray();
 				InitFrameRate(30);
+				
+				_Title = title;
+				_TitleW = L"Azalea Window";
 		}
 		WINDOW::WINDOW(const std::wstring title) : 
-			STATE(), Unicode(this), DBuff(this), DClick(this), AutoReSize(this),
+			STATE(), Unicode(this, true), DBuff(this), DBuffDIB(this), DClick(this), AutoReSize(this),
 			hwnd(nullptr), hparent(nullptr), Menu(NULL), RegisterFlag(false),
 			Border(false), Proc(&WINDOW::WindowProc){
-				Unicode.Enable(true);
 				tmp = this;
 				
 				InitWindowClass();
 				InitLambda();
 				InitCodeArray();
 				InitFrameRate(30);
+				
+				_Title = "Azalea Window";
+				_TitleW = title;
 		}
 		WINDOW::~WINDOW(){
 			#ifdef AZ_DEBUG
@@ -242,7 +258,8 @@ namespace AZ{
 					ptr = (WINDOW*)(((LPCREATESTRUCT)lp)->lpCreateParams);
 					SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)(ptr));
 					ptr->SetHandle(hwnd);
-					ptr->ECREATE(hwnd, msg, wp, lp);
+					ptr->_EVENT(hwnd, msg, wp, lp, &_ECREATE, &ECREATE);
+					//ptr->ECREATE(hwnd, msg, wp, lp);
 				}
 			}
 			//return 0L;
@@ -262,7 +279,8 @@ namespace AZ{
 					ptr = (WINDOW*)(((LPCREATESTRUCT)lp)->lpCreateParams);
 					SetWindowLongPtrW(hwnd, GWLP_USERDATA, (LONG_PTR)(ptr));
 					ptr->SetHandle(hwnd);
-					ptr->ECREATE(hwnd, msg, wp, lp);
+					ptr->_EVENT(hwnd, msg, wp, lp, &_ECREATE, &ECREATE);
+					//ptr->ECREATE(hwnd, msg, wp, lp);
 				}
 			}
 			//return 0L;
@@ -374,7 +392,8 @@ namespace AZ{
 			int _Width = (wrect.right - wrect.left) - (crect.right - crect.left) + GetSize()[0];
 			int _Height = (wrect.bottom - wrect.top) - (crect.bottom - crect.top) + GetSize()[1];
 			
-			SetWindowPos(hwnd, NULL, 0, 0, _Width, _Height, SWP_NOZORDER|SWP_NOOWNERZORDER|SWP_NOMOVE);
+			SetWindowPos(hwnd, HWND_TOP, 0, 0, _Width, _Height, SWP_NOOWNERZORDER|SWP_NOMOVE);
+			//SetWindowPos(hwnd, NULL, 0, 0, _Width, _Height, SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_NOMOVE);
 		}
 		
 		void WINDOW::ReSizeWindow(const int w, const int h){
@@ -408,6 +427,20 @@ namespace AZ{
 			ResizeClient();
 			if(GetParentHandle() == nullptr) ESetProc();
 			
+			/*
+			auto rev = ChildWindow;
+			std::reverse(rev.begin(), rev.end());
+			
+			if(rev.size() != 0){
+				for(auto v : rev){
+					v.second->SetParentHandle(GetHandle());
+					v.second->SetParent(this);
+					v.second->Create();
+					v.second->ESetProc();
+				}
+			}
+			*/
+			
 			if(ChildWindow.size() != 0){
 				for(auto v : ChildWindow){
 					v.second->SetParentHandle(GetHandle());
@@ -416,6 +449,7 @@ namespace AZ{
 					v.second->ESetProc();
 				}
 			}
+			
 		}
 		void WINDOW::Create(const std::string title){
 			_Title = title;
@@ -461,7 +495,7 @@ namespace AZ{
 				DEBUG::error_dialog(NULL);
 				#endif
 			}
-			ResizeClient();
+			if(GetParentHandle() == nullptr) ResizeClient();
 			if(GetParentHandle() == nullptr) ESetProc();
 			if(ChildWindow.size() != 0){
 				#ifdef AZ_DEBUG
@@ -480,15 +514,15 @@ namespace AZ{
 			#ifdef AZ_DEBUG
 			DEBUG::DebugConsole::Get_Instance().Log("Set Child");
 			#endif
-			ch.SetWindowStyle(ch.GetWindowStyle() | WS_CHILD);
+			//ch.SetWindowStyle(ch.GetWindowStyle() | WS_CHILD);
 			ch.SetMenuId(Id);
 			ChildWindow.push_back(std::pair<HMENU, WINDOW*>(Id,&ch));
 		}
 		void WINDOW::Child(bool f){
 			f ? _WindowStyle | WS_CHILD : _WindowStyle & ~WS_CHILD;
 		}
-		bool WINDOW::Child(){
-			return 
+		bool WINDOW::isChild(){
+			return _WindowStyle && WS_CHILD;
 		}
 		void WINDOW::SetMenuId(const HMENU Id){
 			Menu = Id;
@@ -680,7 +714,7 @@ namespace AZ{
 				return _EVENT(hwnd, msg, wp, lp, &_EITEM, &EITEM)? EBack(hwnd, msg, wp, lp) : 0;
 				
 			case WM_ERASEBKGND:
-				if(DBuff.is() == true) return 1;
+				if(DBuff.is() == true || DBuffDIB.is() == true) return 1;
 				return _EVENT(hwnd, msg, wp, lp, &_EBKG, &EBKG)? EBack(hwnd, msg, wp, lp) : 0;
 			
 			case WM_PAINT:
@@ -716,6 +750,7 @@ namespace AZ{
 		}
 		
 		void WINDOW::InitCodeArray(){
+			/*
 			CodeFuncArray[static_cast<int>(EVENT_CODE::COMMAND)] = &ECOMMAND;
 			CodeFuncArray[static_cast<int>(EVENT_CODE::CREATE)] = &ECREATE;
 			CodeFuncArray[static_cast<int>(EVENT_CODE::PAINT)] = &EPAINT;
@@ -740,6 +775,7 @@ namespace AZ{
 			CodeFuncArray[static_cast<int>(EVENT_CODE::ITEM)] = &EITEM;
 			CodeFuncArray[static_cast<int>(EVENT_CODE::TIMER)] = &ETIMER;
 			CodeFuncArray[static_cast<int>(EVENT_CODE::STATE)] = &ESTATE;
+			*/
 		}
 		
 		void WINDOW::ESetProc(){
@@ -786,7 +822,7 @@ namespace AZ{
 		}
 		
 		CODE WINDOW::_ESIZE(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){
-			if(LOWORD(lp) != GetSize()[0] && HIWORD(lp) != GetSize()[1]){
+			if(LOWORD(lp) != GetSize()[0] || HIWORD(lp) != GetSize()[1]){
 				SetSize(LOWORD(lp), HIWORD(lp));
 				for(auto v : ChildWindow){
 					if(v.second->AutoReSize.is() == true){
@@ -798,7 +834,7 @@ namespace AZ{
 		}
 		
 		CODE WINDOW::ECREATE(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){return 1;}
-		CODE WINDOW::EPAINT(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){return 1;}
+		CODE WINDOW::EPAINT(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp, HDC hdc){return 1;}
 		CODE WINDOW::ECLOSE(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){
 			if(MessageBoxW(GetParentHandle(), L"終了しますか?", L"確認画面", MB_YESNO) != IDYES) return 0;
 			
@@ -838,15 +874,25 @@ namespace AZ{
 		CODE WINDOW::ERELATIVESIZE(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){return DEFAULTEVE;}
 		
 		
-		CODE WINDOW::_ECREATE(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){return 1;}
+		CODE WINDOW::_ECREATE(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){
+			
+			return 1;
+		}
 		CODE WINDOW::_EPAINT(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){
-			CODE ret = EPAINT(hwnd, msg, wp, lp);
-			if(ret == 1 && LayoutFuncP != nullptr){
-				PAINTSTRUCT ps;
-				HDC hdc = BeginPaint(hwnd, &ps);
-				ret = LayoutFuncP(hdc);
-				EndPaint(hwnd, &ps);
+			PAINTSTRUCT ps;
+			HDC hdc;
+			if(DBuff.is() == true){
+				// https://blog.goo.ne.jp/masaki_goo_2006/e/d3c18365234ffb3383f5c30e32c83cf5
+				// ダブル・バッファリングの方法(1) を参照
+				
+				
 			}
+			else if(DBuffDIB.is() == true){}
+			else hdc = BeginPaint(hwnd, &ps);
+			CODE ret = EPAINT(hwnd, msg, wp, lp, hdc);
+			if(ret == 1 && LayoutFuncP != nullptr) ret = LayoutFuncP(hdc);
+			
+			EndPaint(hwnd, &ps);
 			return ret;
 		}
 		CODE WINDOW::_ECLOSE(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){return DEFAULTEVE;}
