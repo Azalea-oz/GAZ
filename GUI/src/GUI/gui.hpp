@@ -15,7 +15,7 @@
 #include<algorithm>
 
 
-#include"../DEBUG/AzDebug.hpp"
+#include"../../DEBUG/AzDebug.hpp"
 #include"../defines.hpp"
 #include"../WCLASS/wclass.hpp"
 #include"../PAINT/paint.hpp"
@@ -34,6 +34,24 @@ namespace AZ{
 		
 		class WINDOW;
 		
+		
+		template<class T>
+		class HANDLEMAP : public UTIL::Singleton<HANDLEMAP<T> >{
+			std::map<HWND, T*> hmap;
+		public:
+			HANDLEMAP();
+			~HANDLEMAP();
+			
+			T* find(HWND);
+			//bool Register(HWND, T*);
+			bool Register(HWND, T);
+			bool Remove(HWND);
+			
+			void DebugPrint();
+		};
+		
+		
+		// template化したい
 		class PROCMAP : public UTIL::Singleton<PROCMAP>{
 			std::map<HWND, WINDOW*> hWndMap;
 		public:
@@ -47,6 +65,19 @@ namespace AZ{
 			
 		};
 		
+		/*
+		class HDCMAP : public UTIL::Singleton<DCMAP>{
+			std::map<HWND, std::pair<HDC, HBITMAP> > hDcMap;
+		public:
+			HDCMAP();
+			~HDCMAP();
+			HDC* find(HWND);
+			bool Register(HWND, std::pair<HDC, HBITMAP>);
+			bool Remove(HWND);
+			
+			void DebugPrint();
+		};
+		*/
 		
 		
 		class WINDOW : public STATE{
@@ -101,35 +132,12 @@ namespace AZ{
 			//register window
 			WINDOW& Register();
 			
-			LRESULT MyProc(HWND, UINT, WPARAM, LPARAM);
+		private:
+			void _Register();
 			
-			//state of option
-			// Is using UNICODE?
-			// Is using Double Buffering?
-			// Is using Reative Sizing?
-			// Is using Double click?
-			/*
-			class MODE{
-				WINDOW *_pWindow; //???
-				bool _Unicode;
-				bool _DBuff;
-				bool _RelativeSize;
-				bool _DClick;
-			public:
-				MODE(WINDOW*);
-				~MODE();
-				void EnableUnicode(const bool);
-				void EnableDBuff(const bool);
-				void EnableRelativeSize(const bool);
-				void EnableDClick(const bool);
-				
-				bool isUnicode();
-				bool isDBuff();
-				bool isRelativeSize();
-				bool isDClick();
-				
-			} Mode;
-			*/
+		public:
+			
+			LRESULT MyProc(HWND, UINT, WPARAM, LPARAM);
 			class MODE{
 				WINDOW *wp;
 				bool state;
@@ -185,6 +193,43 @@ namespace AZ{
 		public:
 			WINDOW& SetExStyle(const DWORD);
 			WINDOW& SetWindowStyle(const DWORD);
+			
+			// set window class style
+			WINDOW& setREDRAW(bool, bool);
+			WINDOW& setDBLCLKS(bool);
+			WINDOW& setDC(bool, bool, bool);
+			WINDOW& setGLOBAL(bool);
+			
+			// set window style
+			WINDOW& setBORDER(bool);
+			WINDOW& setCAPTION(bool);
+			WINDOW& setCHILD(bool);
+			WINDOW& setCLIPCHILDREN(bool);
+			WINDOW& setCLIPSIBLINGS(bool);
+			WINDOW& setDISABLED(bool);
+			WINDOW& setDLGFRAME(bool);
+			WINDOW& setGROUP(bool);
+			WINDOW& setSCROLL(bool, bool);
+			WINDOW& setCAPTIONBOX(bool, bool, bool);
+			WINDOW& setMIN(bool);
+			WINDOW& setMAX(bool);
+			WINDOW& setTABSTOP(bool);
+			WINDOW& setPOPUP(bool);
+			WINDOW& setVISIBLE(bool);
+			WINDOW& setTITLEDWINDOW(bool);
+			
+			// set extended window style
+			WINDOW& setABSPOTION(bool);
+			WINDOW& setACCEPTFILES(bool);
+			WINDOW& setCLIENTEDGE(bool);
+			WINDOW& setCONTEXTHELP(bool);
+			WINDOW& setLEFTSCROLLBAR(bool);
+			WINDOW& setMDICHILD(bool);
+			WINDOW& setNOPARENTNOTIFY(bool);
+			WINDOW& setTOOLWINDOW(bool);
+			WINDOW& setTOPMOST(bool);
+			WINDOW& setTRANSPARENT(bool);
+			
 			
 			DWORD GetExStyle();
 			DWORD GetWindowStyle();

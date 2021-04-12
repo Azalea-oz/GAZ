@@ -3,7 +3,7 @@
 
 namespace DEBUG{
 	
-	void error_dialog(HWND hwnd){
+	void error_dialog(HWND hwnd, std::string str){
 		LPVOID err_msg;
 		FormatMessage(
 			FORMAT_MESSAGE_ALLOCATE_BUFFER |
@@ -12,7 +12,19 @@ namespace DEBUG{
 			NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
 			(LPTSTR)&err_msg, 0, NULL);
 		
-		MessageBox(hwnd, (LPCTSTR)err_msg, "ERROR", MB_OK);
+		MessageBox(hwnd, (LPCTSTR)err_msg, str.c_str(), MB_OK);
+		LocalFree(err_msg);
+	}
+	void error_dialog(HWND hwnd, std::wstring str){
+		LPVOID err_msg;
+		FormatMessageW(
+			FORMAT_MESSAGE_ALLOCATE_BUFFER |
+			FORMAT_MESSAGE_FROM_SYSTEM |
+			FORMAT_MESSAGE_IGNORE_INSERTS,
+			NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+			(LPWSTR)&err_msg, 0, NULL);
+		
+		MessageBoxW(hwnd, (LPCWSTR)err_msg, str.c_str(), MB_OK);
 		LocalFree(err_msg);
 	}
 	

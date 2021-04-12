@@ -18,7 +18,8 @@
 
 
 namespace DEBUG{
-	DLL_EXPORT void error_dialog(HWND);
+	DLL_EXPORT void error_dialog(HWND, std::string);
+	DLL_EXPORT void error_dialog(HWND, std::wstring);
 	DLL_EXPORT BOOL WINAPI HandlerRoutine(DWORD);
 	template<typename T>
 	constexpr void DLog(T);

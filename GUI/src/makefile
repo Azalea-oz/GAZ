@@ -79,7 +79,6 @@ build64-exe-g: $(OBJS) ../bin/azdebug64.dll
 
 .PHONY: dll
 dll:$(OBJS)
-	md ..\bin
 	g++ $(OBJS) -o $(DLL) -shared $(DLLOP) $(LIBDIR) $(LIBSDEBUG) $(LIBS64)
 
 #######################################################################

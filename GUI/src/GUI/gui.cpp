@@ -1,8 +1,52 @@
 #include"gui.hpp"
 
-#define AZ_DEBUG 1
+//#define AZ_DEBUG 1
 namespace AZ{
 	namespace GUI{
+		
+		template<class T>
+		T* HANDLEMAP<T>::find(HWND hwnd){
+			typename std::map<HWND, T*>::iterator itr = hmap.find(hwnd);
+			if(itr != hmap.end()) return itr->second;
+			return nullptr;
+		}
+		/*
+		template<class T>
+		bool HANDLEMAP<T>::Register(HWND hwnd, T *item){
+			//T *tmp = new T(item);
+			return  hmap.insert(std::pair<HWND, T*>(hwnd, item)).second;
+		}
+		*/
+		template<class T>
+		bool HANDLEMAP<T>::Register(HWND hwnd, T item){
+			T *tmp = new T;
+			*tmp = item;
+			return  hmap.insert(std::pair<HWND, T*>(hwnd, tmp)).second;
+		}
+		
+		template<class T>
+		bool HANDLEMAP<T>::Remove(HWND hwnd){
+			typename std::map<HWND, T*>::iterator itr = hmap.find(hwnd);
+			if(itr != hmap.end()){
+				delete itr->second;
+				hmap.erase(itr);
+				return true;
+			}
+			return false;
+		}
+		template<class T>
+		void HANDLEMAP<T>::DebugPrint(){
+			#ifdef AZ_DEBUG
+			DEBUG::DebugConsole::Get_Instance().Log("-- HANDLE MAP --------------");
+			DEBUG::DebugConsole::Get_Instance().Log((int)hmap.size());
+			for(auto itr : hmap){
+				DEBUG::DebugConsole::Get_Instance().Log((LPVOID)itr.first);
+				DEBUG::DebugConsole::Get_Instance().Log((LPVOID)itr.second);
+			}
+			DEBUG::DebugConsole::Get_Instance().Log("----------------------------");
+			DEBUG::DebugConsole::Get_Instance().Log("");
+			#endif
+		}
 		
 		PROCMAP::PROCMAP(){}
 		PROCMAP::~PROCMAP(){}
@@ -39,6 +83,52 @@ namespace AZ{
 			DEBUG::DebugConsole::Get_Instance().Log("");
 			#endif
 		}
+		
+		/*
+		HDCMAP::HDCMAP(){}
+		HDCMAP::~HDCMAP(){
+			for(auto itr = hDcMap.begin(); itr != hDcMap.end(); ++itr){
+				DeleteDC(itr->second.first);
+				DeleteObject(itr->second.second);
+			}
+		}
+		
+		std::pair<HDC, HBITMAP> HDCMAP::find(HWND hwnd){
+			std::map<HWND, std::pair<HDC, HBITMAP> >::iterator itr = hDcMap.find(hwnd);
+			if(itr != hDcMap.end()) return itr->second;
+			return nullptr;
+		}
+		
+		bool HDCMAP::Register(HWND hwnd, std::pair<HDC, HBITMAP> item){
+			return  hDcMap.insert(std::pair<HWND, std::pair<HDC, HBITMAP> >(hwnd, item)).second;
+		}
+		
+		bool HDCMAP::Remove(HWND hwnd){
+			std::map<HWND, std::pair<HDC, HBITMAP> >::iterator itr = hDcMap.find(hwnd);
+			if(itr != hDcMap.end()){
+				DeleteDC(itr->second->first);
+				DeleteObject(itr->second->second);
+				hDcMap.erase(itr);
+				return true;
+			}
+			return false;
+		}
+		
+		
+		void HDCMAP::DebugPrint(){
+			#ifdef AZ_DEBUG
+			DEBUG::DebugConsole::Get_Instance().Log("-- HDCMAP --------------");
+			DEBUG::DebugConsole::Get_Instance().Log((int)hDcMap.size());
+			for(auto itr : hDcMap){
+				DEBUG::DebugConsole::Get_Instance().Log((LPVOID)itr.first);
+				DEBUG::DebugConsole::Get_Instance().Log((LPVOID)itr.second.first);
+				DEBUG::DebugConsole::Get_Instance().Log((LPVOID)itr.second.second);
+			}
+			DEBUG::DebugConsole::Get_Instance().Log("-------------------------");
+			DEBUG::DebugConsole::Get_Instance().Log("");
+			#endif
+		}
+		*/
 		
 		WINDOW::MODE::MODE(WINDOW *w){
 			wp = w;
@@ -87,7 +177,7 @@ namespace AZ{
 		using CODE = int;
 		WINDOW* WINDOW::tmp = nullptr;
 		WINDOW::WINDOW() :
-			STATE(), Unicode(this, true), DBuff(this), DBuffDIB(this), DClick(this), AutoReSize(this),
+			STATE(), Unicode(this, true), DBuff(this, false), DBuffDIB(this), DClick(this), AutoReSize(this),
 			hwnd(nullptr), hparent(nullptr), Menu(NULL), RegisterFlag(false),
 			Border(false), Proc(&WINDOW::WindowProc){
 				tmp = this;
@@ -101,7 +191,7 @@ namespace AZ{
 				_TitleW = L"Azalea Window";
 		}
 		WINDOW::WINDOW(const int w, const int h) : 
-			STATE(w, h), Unicode(this, true), DBuff(this), DBuffDIB(this), DClick(this), AutoReSize(this),
+			STATE(w, h), Unicode(this, true), DBuff(this, false), DBuffDIB(this), DClick(this), AutoReSize(this),
 			hwnd(nullptr), hparent(nullptr), Menu(NULL), RegisterFlag(false),
 			Border(false), Proc(&WINDOW::WindowProc){
 				tmp = this;
@@ -116,7 +206,7 @@ namespace AZ{
 		}
 		
 		WINDOW::WINDOW(const int w, const int h, const std::string title) : 
-			STATE(w, h), Unicode(this), DBuff(this), DBuffDIB(this), DClick(this), AutoReSize(this),
+			STATE(w, h), Unicode(this), DBuff(this, false), DBuffDIB(this), DClick(this), AutoReSize(this),
 			hwnd(nullptr), hparent(nullptr), Menu(NULL), RegisterFlag(false),
 			Border(false), Proc(&WINDOW::WindowProc){
 				tmp = this;
@@ -130,7 +220,7 @@ namespace AZ{
 				_TitleW = L"Azalea Window";
 		}
 		WINDOW::WINDOW(const int w, const int h, const std::wstring title) : 
-			STATE(w, h), Unicode(this, true), DBuff(this), DBuffDIB(this), DClick(this), AutoReSize(this),
+			STATE(w, h), Unicode(this, true), DBuff(this, false), DBuffDIB(this), DClick(this), AutoReSize(this),
 			hwnd(nullptr), hparent(nullptr), Menu(NULL), RegisterFlag(false),
 			Border(false), Proc(&WINDOW::WindowProc){
 				tmp = this;
@@ -144,7 +234,7 @@ namespace AZ{
 				_TitleW = title;
 		}
 		WINDOW::WINDOW(const std::string title) : 
-			STATE(), Unicode(this), DBuff(this), DBuffDIB(this), DClick(this), AutoReSize(this),
+			STATE(), Unicode(this), DBuff(this, false), DBuffDIB(this), DClick(this), AutoReSize(this),
 			hwnd(nullptr), hparent(nullptr), Menu(NULL), RegisterFlag(false),
 			Border(false), Proc(&WINDOW::WindowProc){
 				tmp = this;
@@ -158,7 +248,7 @@ namespace AZ{
 				_TitleW = L"Azalea Window";
 		}
 		WINDOW::WINDOW(const std::wstring title) : 
-			STATE(), Unicode(this, true), DBuff(this), DBuffDIB(this), DClick(this), AutoReSize(this),
+			STATE(), Unicode(this, true), DBuff(this, false), DBuffDIB(this), DClick(this), AutoReSize(this),
 			hwnd(nullptr), hparent(nullptr), Menu(NULL), RegisterFlag(false),
 			Border(false), Proc(&WINDOW::WindowProc){
 				tmp = this;
@@ -200,57 +290,63 @@ namespace AZ{
 		}
 		
 		WINDOW& WINDOW::Register(){
-			if(Unicode.is()){
-				wcexw.cbSize = cbSize;
-				wcexw.style = style;
-				wcexw.lpfnWndProc = lpfnWndProc;
-				wcexw.cbClsExtra = cbClsExtra;
-				wcexw.cbWndExtra = cbWndExtra;
-				wcexw.hInstance = hInstance;
-				wcexw.hIcon = hIcon;
-				wcexw.hIconSm = hIconSm;
-				wcexw.hCursor = hCursor;
-				wcexw.hbrBackground = hbrBackground;
-				wcexw.lpszMenuName = lpszMenuNameW.c_str();
-				wcexw.lpszClassName = lpszClassNameW.c_str();
-				if(!RegisterClassExW(&wcexw)){
-					#ifdef AZ_DEBUG
-					DEBUG::error_dialog(NULL);
-					#endif
-				}
-			} else{
-				wcex.cbSize = cbSize;
-				wcex.style = style;
-				wcex.lpfnWndProc = lpfnWndProc;
-				wcex.cbClsExtra = cbClsExtra;
-				wcex.cbWndExtra = cbWndExtra;
-				wcex.hInstance = hInstance;
-				wcex.hIcon = hIcon;
-				wcex.hIconSm = hIconSm;
-				wcex.hCursor = hCursor;
-				wcex.hbrBackground = hbrBackground;
-				wcex.lpszMenuName = lpszMenuName.c_str();
-				wcex.lpszClassName = lpszClassName.c_str();
-				
-				if(!RegisterClassEx(&wcex)){
-					#ifdef AZ_DEBUG
-					DEBUG::error_dialog(NULL);
-					#endif
-				}
-			}
 			RegisterFlag = true;
 			return *this;
+		}
+		void WINDOW::_Register(){
+			if(RegisterFlag == true){
+				if(Unicode.is()){
+					wcexw.cbSize = cbSize;
+					wcexw.style = style;
+					wcexw.lpfnWndProc = lpfnWndProc;
+					wcexw.cbClsExtra = cbClsExtra;
+					wcexw.cbWndExtra = cbWndExtra;
+					wcexw.hInstance = hInstance;
+					wcexw.hIcon = hIcon;
+					wcexw.hIconSm = hIconSm;
+					wcexw.hCursor = hCursor;
+					wcexw.hbrBackground = hbrBackground;
+					wcexw.lpszMenuName = lpszMenuNameW.c_str();
+					wcexw.lpszClassName = lpszClassNameW.c_str();
+					if(!RegisterClassExW(&wcexw)){
+						#ifdef AZ_DEBUG
+						DEBUG::error_dialog(NULL, GetTitleW().c_str());
+						#endif
+					}
+				} else{
+					wcex.cbSize = cbSize;
+					wcex.style = style;
+					wcex.lpfnWndProc = lpfnWndProc;
+					wcex.cbClsExtra = cbClsExtra;
+					wcex.cbWndExtra = cbWndExtra;
+					wcex.hInstance = hInstance;
+					wcex.hIcon = hIcon;
+					wcex.hIconSm = hIconSm;
+					wcex.hCursor = hCursor;
+					wcex.hbrBackground = hbrBackground;
+					wcex.lpszMenuName = lpszMenuName.c_str();
+					wcex.lpszClassName = lpszClassName.c_str();
+					
+					if(!RegisterClassEx(&wcex)){
+						#ifdef AZ_DEBUG
+						DEBUG::error_dialog(NULL, GetTitleW().c_str());
+						#endif
+					}
+				}
+			}
 		}
 		const WNDCLASSEX WINDOW::GetWcex(){return wcex;}
 		//const WNDCLASSEX WINDOW::GetWcexW(){return wcexw;}
 		
 		LRESULT CALLBACK WINDOW::EntryProcA(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp){
 			WINDOW *ptr = PROCMAP::Get_Instance().find(hwnd);
+			//WINDOW *ptr = *(HANDLEMAP<WINDOW*>::Get_Instance().find(hwnd));
 			
 			//hash map(window handle, window proc) 
 			if(ptr != nullptr){
 				if(msg == WM_DESTROY){
 					PROCMAP::Get_Instance().Remove(hwnd);
+					//HANDLEMAP<WINDOW*>::Get_Instance().Remove(hwnd);
 				}
 				return ptr->MyProc(hwnd, msg, wp, lp);
 			} else{
@@ -267,11 +363,13 @@ namespace AZ{
 		}
 		LRESULT CALLBACK WINDOW::EntryProcW(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp){
 			WINDOW *ptr = PROCMAP::Get_Instance().find(hwnd);
+			//WINDOW *ptr = *(HANDLEMAP<WINDOW*>::Get_Instance().find(hwnd));
 			
 			//hash map(window handle, window proc)
 			if(ptr != nullptr){
 				if(msg == WM_DESTROY){
 					PROCMAP::Get_Instance().Remove(hwnd);
+					//HANDLEMAP<WINDOW*>::Get_Instance().Remove(hwnd);
 				}
 				return ptr->MyProc(ptr->GetHandle(), msg, wp, lp);
 			} else{
@@ -289,11 +387,19 @@ namespace AZ{
 		
 		LRESULT WINDOW::MyProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp){
 			#ifdef AZ_DEBUG
-			std::wstring _str = L"[";
-			_str += GetTitleW();
-			_str += L"] > ";
-			_str += CvtMsgCodetowc(msg);
-			DEBUG::DebugConsole::Get_Instance().Log(_str);
+			if(Unicode.is()){
+				std::wstring _str = L"[";
+				_str += GetTitleW();
+				_str += L"] > ";
+				_str += CvtMsgCodetowc(msg);
+				//DEBUG::DebugConsole::Get_Instance().Log(_str);
+			} else{
+				std::string _str = "[";
+				_str += GetTitleA();
+				_str += "] > ";
+				//_str += CvtMsgCodetoc(msg);
+				//DEBUG::DebugConsole::Get_Instance().Log(_str);
+			}
 			#endif
 			return (this->WindowProc)(hwnd, msg, wp, lp);
 		}
@@ -309,6 +415,172 @@ namespace AZ{
 		DWORD WINDOW::GetWindowStyle(){
 			return _WindowStyle;
 		}
+		DWORD WINDOW::GetExStyle(){
+			return _ExStyle;
+		}
+		WINDOW& WINDOW::setREDRAW(bool v, bool h){
+			if(v) style |= CS_VREDRAW;
+			else style &= ~CS_VREDRAW;
+			if(h) style |= CS_HREDRAW;
+			else style &= ~CS_HREDRAW;
+			return *this;
+		}
+		WINDOW& WINDOW::setDBLCLKS(bool f){
+			if(f) style |= CS_DBLCLKS;
+			else style &= ~CS_DBLCLKS;
+			return *this;
+		}
+		WINDOW& WINDOW::setDC(bool cl, bool own, bool parent){
+			if(cl) style |= CS_CLASSDC;
+			else style &= ~CS_CLASSDC;
+			if(own) style |= CS_OWNDC;
+			else style &= ~CS_OWNDC;
+			if(parent) style |= CS_PARENTDC;
+			else style &= ~CS_PARENTDC;
+			return *this;
+		}
+		WINDOW& WINDOW::setGLOBAL(bool f){
+			if(f) style |= CS_GLOBALCLASS;
+			else style &= ~CS_GLOBALCLASS;
+			return *this;
+		}
+		WINDOW& WINDOW::setBORDER(bool f){
+			if(f) _WindowStyle |= WS_BORDER;
+			else _WindowStyle &= ~WS_BORDER;
+			return *this;
+		}
+		WINDOW& WINDOW::setCAPTION(bool f){
+			if(f) _WindowStyle |= WS_CAPTION;
+			else _WindowStyle &= ~WS_CAPTION;
+			return *this;
+		}
+		WINDOW& WINDOW::setCHILD(bool f){
+			if(f) _WindowStyle |= WS_CHILD;
+			else _WindowStyle &= ~WS_CHILD;
+			return *this;
+		}
+		WINDOW& WINDOW::setCLIPCHILDREN(bool f){
+			if(f) _WindowStyle |= WS_CLIPCHILDREN;
+			else _WindowStyle &= ~WS_CLIPCHILDREN;
+			return *this;
+		}
+		WINDOW& WINDOW::setCLIPSIBLINGS(bool f){
+			if(f) _WindowStyle |= WS_CLIPSIBLINGS;
+			else _WindowStyle &= ~WS_CLIPSIBLINGS;
+			return *this;
+		}
+		WINDOW& WINDOW::setDISABLED(bool f){
+			if(f) _WindowStyle |= WS_DISABLED;
+			else _WindowStyle &= ~WS_DISABLED;
+			return *this;
+		}
+		WINDOW& WINDOW::setDLGFRAME(bool f){
+			if(f) _WindowStyle |= WS_DLGFRAME;
+			else _WindowStyle &= ~WS_DLGFRAME;
+			return *this;
+		}
+		WINDOW& WINDOW::setGROUP(bool f){
+			if(f) _WindowStyle |= WS_GROUP;
+			else _WindowStyle &= ~WS_GROUP;
+			return *this;
+		}
+		WINDOW& WINDOW::setSCROLL(bool h, bool v){
+			if(h) _WindowStyle |= WS_HSCROLL;
+			else _WindowStyle &= ~WS_HSCROLL;
+			if(v) _WindowStyle |= WS_VSCROLL;
+			else _WindowStyle &= ~WS_VSCROLL;
+			return *this;
+		}
+		WINDOW& WINDOW::setCAPTIONBOX(bool min, bool max, bool close){
+			if(min) _WindowStyle |= WS_MINIMIZEBOX;
+			else _WindowStyle &= ~WS_MINIMIZEBOX;
+			if(max) _WindowStyle |= WS_MAXIMIZEBOX;
+			else _WindowStyle &= ~WS_MAXIMIZEBOX;
+			if(!close) style |= CS_NOCLOSE;
+			else style &= ~CS_NOCLOSE;
+			return *this;
+		}
+		WINDOW& WINDOW::setMIN(bool f){
+			if(f) _WindowStyle |= WS_MINIMIZE;
+			else _WindowStyle &= ~WS_MINIMIZE;
+			return *this;
+		}
+		WINDOW& WINDOW::setMAX(bool f){
+			if(f) _WindowStyle |= WS_MAXIMIZE;
+			else _WindowStyle &= ~WS_MAXIMIZE;
+			return *this;
+		}
+		WINDOW& WINDOW::setTABSTOP(bool f){
+			if(f) _WindowStyle |= WS_TABSTOP;
+			else _WindowStyle &= ~WS_TABSTOP;
+			return *this;
+		}
+		WINDOW& WINDOW::setPOPUP(bool f){
+			if(f) _WindowStyle |= WS_POPUP;
+			else _WindowStyle &= ~WS_POPUP;
+			return *this;
+		}
+		WINDOW& WINDOW::setVISIBLE(bool f){
+			if(f) _WindowStyle |= WS_VISIBLE;
+			else _WindowStyle &= ~WS_VISIBLE;
+			return *this;
+		}
+		WINDOW& WINDOW::setTITLEDWINDOW(bool f){
+			if(f) _WindowStyle |= WS_OVERLAPPEDWINDOW;
+			else _WindowStyle &= ~WS_OVERLAPPEDWINDOW;
+			return *this;
+		}
+		WINDOW& WINDOW::setABSPOTION(bool f){
+			if(f) _WindowStyle |= WS_VISIBLE;
+			else _WindowStyle &= ~WS_VISIBLE;
+			return *this;
+		}
+		WINDOW& WINDOW::setACCEPTFILES(bool f){
+			if(f) _WindowStyle |= WS_VISIBLE;
+			else _WindowStyle &= ~WS_VISIBLE;
+			return *this;
+		}
+		WINDOW& WINDOW::setCLIENTEDGE(bool f){
+			if(f) _WindowStyle |= WS_VISIBLE;
+			else _WindowStyle &= ~WS_VISIBLE;
+			return *this;
+		}
+		WINDOW& WINDOW::setCONTEXTHELP(bool f){
+			if(f) _WindowStyle |= WS_VISIBLE;
+			else _WindowStyle &= ~WS_VISIBLE;
+			return *this;
+		}
+		WINDOW& WINDOW::setLEFTSCROLLBAR(bool f){
+			if(f) _WindowStyle |= WS_VISIBLE;
+			else _WindowStyle &= ~WS_VISIBLE;
+			return *this;
+		}
+		WINDOW& WINDOW::setMDICHILD(bool f){
+			if(f) _WindowStyle |= WS_VISIBLE;
+			else _WindowStyle &= ~WS_VISIBLE;
+			return *this;
+		}
+		WINDOW& WINDOW::setNOPARENTNOTIFY(bool f){
+			if(f) _WindowStyle |= WS_VISIBLE;
+			else _WindowStyle &= ~WS_VISIBLE;
+			return *this;
+		}
+		WINDOW& WINDOW::setTOOLWINDOW(bool f){
+			if(f) _WindowStyle |= WS_VISIBLE;
+			else _WindowStyle &= ~WS_VISIBLE;
+			return *this;
+		}
+		WINDOW& WINDOW::setTOPMOST(bool f){
+			if(f) _WindowStyle |= WS_VISIBLE;
+			else _WindowStyle &= ~WS_VISIBLE;
+			return *this;
+		}
+		WINDOW& WINDOW::setTRANSPARENT(bool f){
+			if(f) _WindowStyle |= WS_VISIBLE;
+			else _WindowStyle &= ~WS_VISIBLE;
+			return *this;
+		}
+		
 		WINDOW& WINDOW::SetTitle(const std::string title){
 			_Title = title;
 			return *this;
@@ -402,6 +674,8 @@ namespace AZ{
 		}
 		
 		void WINDOW::Create(){
+			_Register();
+			
 			if(Unicode.is()){
 				hwnd = CreateWindowExW(
 					_ExStyle,
@@ -417,29 +691,25 @@ namespace AZ{
 					GetPos()[0], GetPos()[1], GetSize()[0], GetSize()[1],
 					GetParentHandle(), Menu, hInstance, this);
 			}
-			PROCMAP::Get_Instance().Register(GetHandle(), this);
 			if(hwnd == nullptr){
 				#ifdef AZ_DEBUG
-				DEBUG::error_dialog(NULL);
+				DEBUG::error_dialog(NULL, GetTitleW().c_str());
 				#endif
 			}
+			PROCMAP::Get_Instance().Register(GetHandle(), this);
+			//HANDLEMAP<WINDOW*>::Get_Instance().Register(GetHandle(), this);
+			if(DBuff.is() == true){
+				//HDC hdc = GetDC(GetHandle());
+				//HDC hmem = CreateCompatibleDC(hdc);
+				//HBITMAP hbm = CreateCompatibleBitmap(hdc, GetSize()[0], GetSize()[1]);
+				//PAINT::HDCBUFF tmp(hdc, GetSize());
+				//HANDLEMAP<PAINT::HDCBUFF>::Get_Instance().Register(GetHandle(), std::move(tmp));
+				//ReleaseDC(GetHandle(), hdc);
+			}
+			
 			
 			ResizeClient();
 			if(GetParentHandle() == nullptr) ESetProc();
-			
-			/*
-			auto rev = ChildWindow;
-			std::reverse(rev.begin(), rev.end());
-			
-			if(rev.size() != 0){
-				for(auto v : rev){
-					v.second->SetParentHandle(GetHandle());
-					v.second->SetParent(this);
-					v.second->Create();
-					v.second->ESetProc();
-				}
-			}
-			*/
 			
 			if(ChildWindow.size() != 0){
 				for(auto v : ChildWindow){
@@ -452,6 +722,8 @@ namespace AZ{
 			
 		}
 		void WINDOW::Create(const std::string title){
+			_Register();
+			
 			_Title = title;
 			hwnd = CreateWindowExA(
 				_ExStyle,
@@ -459,11 +731,20 @@ namespace AZ{
 				_WindowStyle,
 				GetPos()[0], GetPos()[1], GetSize()[0], GetSize()[1],
 				GetParentHandle(), NULL, hInstance, this);
-			PROCMAP::Get_Instance().Register(GetHandle(), this);
 			if(hwnd == nullptr){
 				#ifdef AZ_DEBUG
-				DEBUG::error_dialog(NULL);
+				DEBUG::error_dialog(NULL, GetTitleW().c_str());
 				#endif
+			}
+			PROCMAP::Get_Instance().Register(GetHandle(), this);
+			//HANDLEMAP<WINDOW*>::Get_Instance().Register(GetHandle(), this);
+			if(DBuff.is() == true){
+				//HDC hdc = GetDC(GetHandle());
+				//HDC hmem = CreateCompatibleDC(hdc);
+				//HBITMAP hbm = CreateCompatibleBitmap(hdc, GetSize()[0], GetSize()[1]);
+				//PAINT::HDCBUFF tmp(hdc, GetSize());
+				//HANDLEMAP<PAINT::HDCBUFF>::Get_Instance().Register(GetHandle(), std::move(tmp));
+				//ReleaseDC(GetHandle(), hdc);
 			}
 			
 			ResizeClient();
@@ -482,6 +763,8 @@ namespace AZ{
 			}
 		}
 		void WINDOW::Create(const std::wstring title){
+			_Register();
+			
 			_TitleW = title;
 			hwnd = CreateWindowExW(
 				_ExStyle,
@@ -489,12 +772,22 @@ namespace AZ{
 				_WindowStyle,
 				GetPos()[0], GetPos()[1], GetSize()[0], GetSize()[1],
 				GetParentHandle(), NULL, hInstance, this);
-			PROCMAP::Get_Instance().Register(GetHandle(), this);
 			if(hwnd == nullptr){
 				#ifdef AZ_DEBUG
-				DEBUG::error_dialog(NULL);
+				DEBUG::error_dialog(NULL, GetTitleW().c_str());
 				#endif
 			}
+			PROCMAP::Get_Instance().Register(GetHandle(), this);
+			//HANDLEMAP<WINDOW*>::Get_Instance().Register(GetHandle(), this);
+			if(DBuff.is() == true){
+				//HDC hdc = GetDC(GetHandle());
+				//HDC hmem = CreateCompatibleDC(hdc);
+				//HBITMAP hbm = CreateCompatibleBitmap(hdc, GetSize()[0], GetSize()[1]);
+				//PAINT::HDCBUFF tmp(hdc, GetSize());
+				//HANDLEMAP<PAINT::HDCBUFF>::Get_Instance().Register(GetHandle(), std::move(tmp));
+				//ReleaseDC(GetHandle(), hdc);
+			}
+			
 			if(GetParentHandle() == nullptr) ResizeClient();
 			if(GetParentHandle() == nullptr) ESetProc();
 			if(ChildWindow.size() != 0){
@@ -793,7 +1086,7 @@ namespace AZ{
 						DefProc = (WNDPROC)(LONG_PTR)GetWindowLongPtrW(hwnd, GWLP_WNDPROC);
 						if(DefProc == 0){
 							#ifdef AZ_DEBUG
-							DEBUG::error_dialog(NULL);
+							DEBUG::error_dialog(NULL, GetTitleW().c_str());
 							#endif
 						}
 						//ProcをEntryProcに変更
@@ -805,7 +1098,7 @@ namespace AZ{
 						DefProc = (WNDPROC)(LONG_PTR)GetWindowLongPtr(hwnd, GWLP_WNDPROC);
 						if(DefProc == 0){
 							#ifdef AZ_DEBUG
-							DEBUG::error_dialog(NULL);
+							DEBUG::error_dialog(NULL, GetTitleW().c_str());
 							#endif
 						}
 						SetWindowLongPtr(hwnd, GWLP_WNDPROC, (LONG_PTR)EntryProcA);
@@ -814,7 +1107,7 @@ namespace AZ{
 			}
 			#ifdef AZ_DEBUG
 			DEBUG::DebugConsole::Get_Instance().Log("-- Set DefProc ----------");
-			DEBUG::DebugConsole::Get_Instance().Log(GetTitleW());
+			//DEBUG::DebugConsole::Get_Instance().Log(GetTitleW());
 			DEBUG::DebugConsole::Get_Instance().Log((LPVOID)hwnd);
 			DEBUG::DebugConsole::Get_Instance().Log((LPVOID)DefProc);
 			DEBUG::DebugConsole::Get_Instance().Log("-------------------------");
@@ -836,8 +1129,11 @@ namespace AZ{
 		CODE WINDOW::ECREATE(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){return 1;}
 		CODE WINDOW::EPAINT(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp, HDC hdc){return 1;}
 		CODE WINDOW::ECLOSE(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){
+			if(GetParentHandle() != nullptr){
+				SendMessage(GetParentHandle(), msg, wp, lp);
+				return 1;
+			}
 			if(MessageBoxW(GetParentHandle(), L"終了しますか?", L"確認画面", MB_YESNO) != IDYES) return 0;
-			
 			return 1;
 		}
 		CODE WINDOW::EDESTROY(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){
@@ -875,22 +1171,39 @@ namespace AZ{
 		
 		
 		CODE WINDOW::_ECREATE(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){
-			
 			return 1;
 		}
 		CODE WINDOW::_EPAINT(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){
 			PAINTSTRUCT ps;
-			HDC hdc;
+			HDC hdc = BeginPaint(hwnd, &ps);
+			HDC hmem;
+			CODE ret;
+			
+			
+			/*
 			if(DBuff.is() == true){
 				// https://blog.goo.ne.jp/masaki_goo_2006/e/d3c18365234ffb3383f5c30e32c83cf5
 				// ダブル・バッファリングの方法(1) を参照
-				
-				
+				//hmem = HANDLEMAP<PAINT::HDCBUFF>::Get_Instance().find(hwnd)->GetHMEM();
 			}
-			else if(DBuffDIB.is() == true){}
-			else hdc = BeginPaint(hwnd, &ps);
-			CODE ret = EPAINT(hwnd, msg, wp, lp, hdc);
+			else if(DBuffDIB.is() == true){
+				
+			}*/
+			
+			ret = EPAINT(hwnd, msg, wp, lp, hdc);
 			if(ret == 1 && LayoutFuncP != nullptr) ret = LayoutFuncP(hdc);
+			
+				/*
+			if(DBuff.is() == true){
+				//CODE ret = EPAINT(hwnd, msg, wp, lp, hmem);
+				//if(ret == 1 && LayoutFuncP != nullptr) ret = LayoutFuncP(hmem);
+				
+				// 描画
+				//BitBlt(hdc, 0, 0, GetSize()[0], GetSize()[1], hmem, 0, 0, SRCCOPY);
+			}
+			else if(DBuffDIB.is() == true){
+				
+			}*/
 			
 			EndPaint(hwnd, &ps);
 			return ret;
@@ -946,7 +1259,7 @@ namespace AZ{
 						DEBUG::DebugConsole::Get_Instance().Log((LPVOID)v.first);
 						std::wstring tmp = L"pass -> ";
 						tmp += v.second->GetTitleW();
-						DEBUG::DebugConsole::Get_Instance().Log(tmp);
+						//DEBUG::DebugConsole::Get_Instance().Log(tmp);
 						DEBUG::DebugConsole::Get_Instance().Log("-------------------------");
 						#endif
 						return v.second->CHILDMSG(v.second->GetHandle(), msg, wp, lp);
@@ -1021,10 +1334,12 @@ namespace AZ{
 					if(_GameLoopP != nullptr){
 						_GameLoopP(GameLoopArgs);
 						
+						/*
 						if(1){
 							InvalidateRect(GetHandle(), NULL, true);
 							UpdateWindow(GetHandle());
 						}
+						*/
 					}
 					if(_WaitP != nullptr) _WaitP(WaitArgs);
 					else Wait();
@@ -1048,7 +1363,7 @@ namespace AZ{
 			DEBUG::DebugConsole::Get_Instance().Log("start create");
 			DEBUG::DebugConsole::Get_Instance().Log(_ExStyle);
 			if(Unicode.is()){
-				DEBUG::DebugConsole::Get_Instance().Log(lpszClassNameW.c_str());
+				//DEBUG::DebugConsole::Get_Instance().Log(lpszClassNameW.c_str());
 			} else{
 				DEBUG::DebugConsole::Get_Instance().Log(lpszClassName.c_str());
 			}
