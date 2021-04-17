@@ -4,48 +4,105 @@
 namespace AZ{
 	namespace GUI{
 		
-		template<class T>
-		T* HANDLEMAP<T>::find(HWND hwnd){
-			typename std::map<HWND, T*>::iterator itr = hmap.find(hwnd);
-			if(itr != hmap.end()) return itr->second;
-			return nullptr;
+		HANDLEITEMS::HANDLEITEMS() : hdc(nullptr), window(nullptr), hmem(nullptr), hbm(nullptr){}
+		HANDLEITEMS::HANDLEITEMS(WINDOW* wp) : window(wp), hmem(nullptr), hbm(nullptr){
+			/*
+			if(wp->DBuff.is() == true){
+				hdc = GetDC(wp->GetHandle());
+				hmem = CreateCompatibleDC(hdc);
+				hbm = CreateCompatibleBitmap(hdc, wp->GetSize()[0], wp->GetSize()[1]);
+				SelectObject(hmem, hbm);
+				SelectObject(hmem, GetStockObject(DC_PEN));
+				SelectObject(hmem, GetStockObject(DC_BRUSH));
+			} else{
+				hmem = nullptr;
+				hbm = nullptr;
+			}*/
 		}
 		/*
-		template<class T>
-		bool HANDLEMAP<T>::Register(HWND hwnd, T *item){
-			//T *tmp = new T(item);
-			return  hmap.insert(std::pair<HWND, T*>(hwnd, item)).second;
+		HANDLEITEMS::HANDLEITEMS(const HANDLEITEMS &obj){
+			#ifdef AZ_DEBUG
+			DEBUG::DebugConsole::Get_Instance().Log("-- COPY --------------");
+			#endif
+			window = obj.window;
+			hmem = obj.hmem;
+			hbm = obj.hbm;
+		}
+		HANDLEITEMS::HANDLEITEMS(HANDLEITEMS &&obj){
+			#ifdef AZ_DEBUG
+			DEBUG::DebugConsole::Get_Instance().Log("-- MOVE --------------");
+			#endif
+			window = obj.window;
+			hmem = obj.hmem;
+			hbm = obj.hbm;
+			
+			obj.window = nullptr;
+			obj.hmem = nullptr;
+			obj.hbm = nullptr;
 		}
 		*/
-		template<class T>
-		bool HANDLEMAP<T>::Register(HWND hwnd, T item){
-			T *tmp = new T;
-			*tmp = item;
-			return  hmap.insert(std::pair<HWND, T*>(hwnd, tmp)).second;
+		
+		HANDLEITEMS::~HANDLEITEMS(){
+			if(hmem != nullptr) DeleteDC(hmem);
+			if(hbm != nullptr)  DeleteObject(hbm);
+		}
+		void HANDLEITEMS::Resize(int w, int h){
+			if(hmem != nullptr) DeleteDC(hmem);
+			if(hbm != nullptr) DeleteObject(hbm);
+			Set(window);
+		}
+		void HANDLEITEMS::Set(WINDOW *wp){
+			window = wp;
+			if(wp->DBuff.is() == true){
+				hdc = GetDC(wp->GetHandle());
+				hmem = CreateCompatibleDC(hdc);
+				hbm = CreateCompatibleBitmap(hdc, wp->GetSize()[0], wp->GetSize()[1]);
+				SelectObject(hmem, hbm);
+				SelectObject(hmem, GetStockObject(DC_PEN));
+				SelectObject(hmem, GetStockObject(DC_BRUSH));
+				if(hdc) ReleaseDC(window->GetHandle(), hdc);
+			} else{
+				hmem = nullptr;
+				hbm = nullptr;
+			}
+		}
+		WINDOW* HANDLEITEMS::GetWINDOW(){
+			return window;
+		}
+		HDC HANDLEITEMS::GetHDC(){
+			return hmem;
+		}
+		HBITMAP HANDLEITEMS::GetHBITMAP(){
+			return hbm;
 		}
 		
-		template<class T>
-		bool HANDLEMAP<T>::Remove(HWND hwnd){
-			typename std::map<HWND, T*>::iterator itr = hmap.find(hwnd);
-			if(itr != hmap.end()){
-				delete itr->second;
-				hmap.erase(itr);
+		HANDLEMAP::HANDLEMAP(){}
+		HANDLEMAP::~HANDLEMAP(){}
+		
+		HANDLEITEMS* HANDLEMAP::find(HWND hwnd){
+			std::map<HWND, HANDLEITEMS>::iterator itr = hWndMap.find(hwnd);
+			if(itr != hWndMap.end()) return &(itr->second);
+			return nullptr;
+		}
+		
+		bool HANDLEMAP::Register(HWND hwnd, WINDOW *wp){
+			HANDLEITEMS item(wp);
+			
+			bool tmp = hWndMap.insert(std::make_pair(hwnd, item)).second;
+			if(tmp){
+				std::map<HWND, HANDLEITEMS>::iterator itr = hWndMap.find(hwnd);
+				itr->second.Set(wp);
+			}
+			return  tmp;
+		}
+		
+		bool HANDLEMAP::Remove(HWND hwnd){
+			std::map<HWND, HANDLEITEMS>::iterator itr = hWndMap.find(hwnd);
+			if(itr != hWndMap.end()){
+				hWndMap.erase(itr);
 				return true;
 			}
 			return false;
-		}
-		template<class T>
-		void HANDLEMAP<T>::DebugPrint(){
-			#ifdef AZ_DEBUG
-			DEBUG::DebugConsole::Get_Instance().Log("-- HANDLE MAP --------------");
-			DEBUG::DebugConsole::Get_Instance().Log((int)hmap.size());
-			for(auto itr : hmap){
-				DEBUG::DebugConsole::Get_Instance().Log((LPVOID)itr.first);
-				DEBUG::DebugConsole::Get_Instance().Log((LPVOID)itr.second);
-			}
-			DEBUG::DebugConsole::Get_Instance().Log("----------------------------");
-			DEBUG::DebugConsole::Get_Instance().Log("");
-			#endif
 		}
 		
 		PROCMAP::PROCMAP(){}
@@ -58,7 +115,7 @@ namespace AZ{
 		}
 		
 		bool PROCMAP::Register(HWND hwnd, WINDOW *item){
-			return  hWndMap.insert(std::pair<HWND, WINDOW* >(hwnd, item)).second;
+			return  hWndMap.insert(std::make_pair(hwnd, item)).second;
 		}
 		
 		bool PROCMAP::Remove(HWND hwnd){
@@ -83,52 +140,6 @@ namespace AZ{
 			DEBUG::DebugConsole::Get_Instance().Log("");
 			#endif
 		}
-		
-		/*
-		HDCMAP::HDCMAP(){}
-		HDCMAP::~HDCMAP(){
-			for(auto itr = hDcMap.begin(); itr != hDcMap.end(); ++itr){
-				DeleteDC(itr->second.first);
-				DeleteObject(itr->second.second);
-			}
-		}
-		
-		std::pair<HDC, HBITMAP> HDCMAP::find(HWND hwnd){
-			std::map<HWND, std::pair<HDC, HBITMAP> >::iterator itr = hDcMap.find(hwnd);
-			if(itr != hDcMap.end()) return itr->second;
-			return nullptr;
-		}
-		
-		bool HDCMAP::Register(HWND hwnd, std::pair<HDC, HBITMAP> item){
-			return  hDcMap.insert(std::pair<HWND, std::pair<HDC, HBITMAP> >(hwnd, item)).second;
-		}
-		
-		bool HDCMAP::Remove(HWND hwnd){
-			std::map<HWND, std::pair<HDC, HBITMAP> >::iterator itr = hDcMap.find(hwnd);
-			if(itr != hDcMap.end()){
-				DeleteDC(itr->second->first);
-				DeleteObject(itr->second->second);
-				hDcMap.erase(itr);
-				return true;
-			}
-			return false;
-		}
-		
-		
-		void HDCMAP::DebugPrint(){
-			#ifdef AZ_DEBUG
-			DEBUG::DebugConsole::Get_Instance().Log("-- HDCMAP --------------");
-			DEBUG::DebugConsole::Get_Instance().Log((int)hDcMap.size());
-			for(auto itr : hDcMap){
-				DEBUG::DebugConsole::Get_Instance().Log((LPVOID)itr.first);
-				DEBUG::DebugConsole::Get_Instance().Log((LPVOID)itr.second.first);
-				DEBUG::DebugConsole::Get_Instance().Log((LPVOID)itr.second.second);
-			}
-			DEBUG::DebugConsole::Get_Instance().Log("-------------------------");
-			DEBUG::DebugConsole::Get_Instance().Log("");
-			#endif
-		}
-		*/
 		
 		WINDOW::MODE::MODE(WINDOW *w){
 			wp = w;
@@ -167,11 +178,8 @@ namespace AZ{
 			
 			_ExStyle = WS_EX_ACCEPTFILES;
 			_WindowStyle = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
-		}
-		
-		void WINDOW::InitFrameRate(int rate){
-			FrameRate = rate;
-			WaitToNextTime = CurrentTimeMilli() + 1000 / FrameRate;
+			
+			//InitFrameRate(30);
 		}
 		
 		using CODE = int;
@@ -185,7 +193,6 @@ namespace AZ{
 				InitWindowClass();
 				InitLambda();
 				InitCodeArray();
-				InitFrameRate(30);
 				
 				_Title = "Azalea Window";
 				_TitleW = L"Azalea Window";
@@ -199,7 +206,6 @@ namespace AZ{
 				InitWindowClass();
 				InitLambda();
 				InitCodeArray();
-				InitFrameRate(30);
 				
 				_Title = "Azalea Window";
 				_TitleW = L"Azalea Window";
@@ -214,7 +220,6 @@ namespace AZ{
 				InitWindowClass();
 				InitLambda();
 				InitCodeArray();
-				InitFrameRate(30);
 				
 				_Title = title;
 				_TitleW = L"Azalea Window";
@@ -228,7 +233,6 @@ namespace AZ{
 				InitWindowClass();
 				InitLambda();
 				InitCodeArray();
-				InitFrameRate(30);
 				
 				_Title = "Azalea Window";
 				_TitleW = title;
@@ -242,7 +246,6 @@ namespace AZ{
 				InitWindowClass();
 				InitLambda();
 				InitCodeArray();
-				InitFrameRate(30);
 				
 				_Title = title;
 				_TitleW = L"Azalea Window";
@@ -256,7 +259,6 @@ namespace AZ{
 				InitWindowClass();
 				InitLambda();
 				InitCodeArray();
-				InitFrameRate(30);
 				
 				_Title = "Azalea Window";
 				_TitleW = title;
@@ -334,19 +336,22 @@ namespace AZ{
 					}
 				}
 			}
+			
 		}
 		const WNDCLASSEX WINDOW::GetWcex(){return wcex;}
 		//const WNDCLASSEX WINDOW::GetWcexW(){return wcexw;}
 		
 		LRESULT CALLBACK WINDOW::EntryProcA(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp){
-			WINDOW *ptr = PROCMAP::Get_Instance().find(hwnd);
-			//WINDOW *ptr = *(HANDLEMAP<WINDOW*>::Get_Instance().find(hwnd));
+			//WINDOW *ptr = PROCMAP::Get_Instance().find(hwnd);
+			WINDOW *ptr;
+			if(HANDLEMAP::Get_Instance().find(hwnd) == nullptr) ptr = nullptr;
+			else ptr = HANDLEMAP::Get_Instance().find(hwnd)->GetWINDOW();
 			
 			//hash map(window handle, window proc) 
 			if(ptr != nullptr){
 				if(msg == WM_DESTROY){
-					PROCMAP::Get_Instance().Remove(hwnd);
-					//HANDLEMAP<WINDOW*>::Get_Instance().Remove(hwnd);
+					//PROCMAP::Get_Instance().Remove(hwnd);
+					HANDLEMAP::Get_Instance().Remove(hwnd);
 				}
 				return ptr->MyProc(hwnd, msg, wp, lp);
 			} else{
@@ -362,14 +367,16 @@ namespace AZ{
 			return DefWindowProc(hwnd, msg, wp, lp);
 		}
 		LRESULT CALLBACK WINDOW::EntryProcW(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp){
-			WINDOW *ptr = PROCMAP::Get_Instance().find(hwnd);
-			//WINDOW *ptr = *(HANDLEMAP<WINDOW*>::Get_Instance().find(hwnd));
+			//WINDOW *ptr = PROCMAP::Get_Instance().find(hwnd);
+			WINDOW *ptr;
+			if(HANDLEMAP::Get_Instance().find(hwnd) == nullptr) ptr = nullptr;
+			else ptr = HANDLEMAP::Get_Instance().find(hwnd)->GetWINDOW();
 			
 			//hash map(window handle, window proc)
 			if(ptr != nullptr){
 				if(msg == WM_DESTROY){
-					PROCMAP::Get_Instance().Remove(hwnd);
-					//HANDLEMAP<WINDOW*>::Get_Instance().Remove(hwnd);
+					//PROCMAP::Get_Instance().Remove(hwnd);
+					HANDLEMAP::Get_Instance().Remove(hwnd);
 				}
 				return ptr->MyProc(ptr->GetHandle(), msg, wp, lp);
 			} else{
@@ -696,21 +703,12 @@ namespace AZ{
 				DEBUG::error_dialog(NULL, GetTitleW().c_str());
 				#endif
 			}
-			PROCMAP::Get_Instance().Register(GetHandle(), this);
-			//HANDLEMAP<WINDOW*>::Get_Instance().Register(GetHandle(), this);
-			if(DBuff.is() == true){
-				//HDC hdc = GetDC(GetHandle());
-				//HDC hmem = CreateCompatibleDC(hdc);
-				//HBITMAP hbm = CreateCompatibleBitmap(hdc, GetSize()[0], GetSize()[1]);
-				//PAINT::HDCBUFF tmp(hdc, GetSize());
-				//HANDLEMAP<PAINT::HDCBUFF>::Get_Instance().Register(GetHandle(), std::move(tmp));
-				//ReleaseDC(GetHandle(), hdc);
-			}
 			
+			//PROCMAP::Get_Instance().Register(GetHandle(), this);
+			HANDLEMAP::Get_Instance().Register(GetHandle(), this);
 			
 			ResizeClient();
 			if(GetParentHandle() == nullptr) ESetProc();
-			
 			if(ChildWindow.size() != 0){
 				for(auto v : ChildWindow){
 					v.second->SetParentHandle(GetHandle());
@@ -719,7 +717,6 @@ namespace AZ{
 					v.second->ESetProc();
 				}
 			}
-			
 		}
 		void WINDOW::Create(const std::string title){
 			_Register();
@@ -736,16 +733,8 @@ namespace AZ{
 				DEBUG::error_dialog(NULL, GetTitleW().c_str());
 				#endif
 			}
-			PROCMAP::Get_Instance().Register(GetHandle(), this);
-			//HANDLEMAP<WINDOW*>::Get_Instance().Register(GetHandle(), this);
-			if(DBuff.is() == true){
-				//HDC hdc = GetDC(GetHandle());
-				//HDC hmem = CreateCompatibleDC(hdc);
-				//HBITMAP hbm = CreateCompatibleBitmap(hdc, GetSize()[0], GetSize()[1]);
-				//PAINT::HDCBUFF tmp(hdc, GetSize());
-				//HANDLEMAP<PAINT::HDCBUFF>::Get_Instance().Register(GetHandle(), std::move(tmp));
-				//ReleaseDC(GetHandle(), hdc);
-			}
+			//PROCMAP::Get_Instance().Register(GetHandle(), this);
+			HANDLEMAP::Get_Instance().Register(GetHandle(), this);
 			
 			ResizeClient();
 			if(GetParentHandle() == nullptr) ESetProc();
@@ -777,16 +766,8 @@ namespace AZ{
 				DEBUG::error_dialog(NULL, GetTitleW().c_str());
 				#endif
 			}
-			PROCMAP::Get_Instance().Register(GetHandle(), this);
-			//HANDLEMAP<WINDOW*>::Get_Instance().Register(GetHandle(), this);
-			if(DBuff.is() == true){
-				//HDC hdc = GetDC(GetHandle());
-				//HDC hmem = CreateCompatibleDC(hdc);
-				//HBITMAP hbm = CreateCompatibleBitmap(hdc, GetSize()[0], GetSize()[1]);
-				//PAINT::HDCBUFF tmp(hdc, GetSize());
-				//HANDLEMAP<PAINT::HDCBUFF>::Get_Instance().Register(GetHandle(), std::move(tmp));
-				//ReleaseDC(GetHandle(), hdc);
-			}
+			//PROCMAP::Get_Instance().Register(GetHandle(), this);
+			HANDLEMAP::Get_Instance().Register(GetHandle(), this);
 			
 			if(GetParentHandle() == nullptr) ResizeClient();
 			if(GetParentHandle() == nullptr) ESetProc();
@@ -809,7 +790,7 @@ namespace AZ{
 			#endif
 			//ch.SetWindowStyle(ch.GetWindowStyle() | WS_CHILD);
 			ch.SetMenuId(Id);
-			ChildWindow.push_back(std::pair<HMENU, WINDOW*>(Id,&ch));
+			ChildWindow.push_back(std::make_pair(Id,&ch));
 		}
 		void WINDOW::Child(bool f){
 			f ? _WindowStyle | WS_CHILD : _WindowStyle & ~WS_CHILD;
@@ -1007,7 +988,11 @@ namespace AZ{
 				return _EVENT(hwnd, msg, wp, lp, &_EITEM, &EITEM)? EBack(hwnd, msg, wp, lp) : 0;
 				
 			case WM_ERASEBKGND:
-				if(DBuff.is() == true || DBuffDIB.is() == true) return 1;
+				if(DBuff.is() == true || DBuffDIB.is() == true){
+					HDC hmem = HANDLEMAP::Get_Instance().find(hwnd)->GetHDC();
+					Rectangle(hmem, 0, 0, GetSize()[0], GetSize()[1]);
+					return 1;
+				}
 				return _EVENT(hwnd, msg, wp, lp, &_EBKG, &EBKG)? EBack(hwnd, msg, wp, lp) : 0;
 			
 			case WM_PAINT:
@@ -1041,7 +1026,6 @@ namespace AZ{
 			}
 			return EBack(hwnd, msg, wp, lp);
 		}
-		
 		void WINDOW::InitCodeArray(){
 			/*
 			CodeFuncArray[static_cast<int>(EVENT_CODE::COMMAND)] = &ECOMMAND;
@@ -1113,13 +1097,16 @@ namespace AZ{
 			DEBUG::DebugConsole::Get_Instance().Log("-------------------------");
 			#endif
 		}
-		
 		CODE WINDOW::_ESIZE(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){
 			if(LOWORD(lp) != GetSize()[0] || HIWORD(lp) != GetSize()[1]){
 				SetSize(LOWORD(lp), HIWORD(lp));
+				if(DBuff.is() == true){
+					HANDLEMAP::Get_Instance().find(hwnd)->Resize(GetSize()[0], GetSize()[1]);
+					Rectangle(HANDLEMAP::Get_Instance().find(hwnd)->GetHDC(), 0, 0, GetSize()[0], GetSize()[1]);
+				}
 				for(auto v : ChildWindow){
 					if(v.second->AutoReSize.is() == true){
-						SendMessage(v.second->GetHandle(), WM_COMMAND, 0 | AZ_RELATIVE_SIZE, 0);
+						SendMessage(v.second->GetHandle(), WM_COMMAND, AZ_RELATIVE_SIZE, 0);
 					}
 				}
 			}
@@ -1176,34 +1163,27 @@ namespace AZ{
 		CODE WINDOW::_EPAINT(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){
 			PAINTSTRUCT ps;
 			HDC hdc = BeginPaint(hwnd, &ps);
-			HDC hmem;
 			CODE ret;
 			
 			
 			/*
+			// https://blog.goo.ne.jp/masaki_goo_2006/e/d3c18365234ffb3383f5c30e32c83cf5
+			// ダブル・バッファリングの方法(1) を参照
+			*/
 			if(DBuff.is() == true){
-				// https://blog.goo.ne.jp/masaki_goo_2006/e/d3c18365234ffb3383f5c30e32c83cf5
-				// ダブル・バッファリングの方法(1) を参照
-				//hmem = HANDLEMAP<PAINT::HDCBUFF>::Get_Instance().find(hwnd)->GetHMEM();
+				HDC hmem = HANDLEMAP::Get_Instance().find(hwnd)->GetHDC();
+				ret = EPAINT(hwnd, msg, wp, lp, hmem);
+				if(LayoutFuncP != nullptr) ret = LayoutFuncP(hmem);
+				
+				BitBlt(hdc, 0, 0, GetSize()[0], GetSize()[1], hmem, 0, 0, SRCCOPY);
+				
+			} else{
+				
+				ret = EPAINT(hwnd, msg, wp, lp, hdc);
+				if(LayoutFuncP != nullptr) ret = LayoutFuncP(hdc);
+				
 			}
-			else if(DBuffDIB.is() == true){
-				
-			}*/
 			
-			ret = EPAINT(hwnd, msg, wp, lp, hdc);
-			if(ret == 1 && LayoutFuncP != nullptr) ret = LayoutFuncP(hdc);
-			
-				/*
-			if(DBuff.is() == true){
-				//CODE ret = EPAINT(hwnd, msg, wp, lp, hmem);
-				//if(ret == 1 && LayoutFuncP != nullptr) ret = LayoutFuncP(hmem);
-				
-				// 描画
-				//BitBlt(hdc, 0, 0, GetSize()[0], GetSize()[1], hmem, 0, 0, SRCCOPY);
-			}
-			else if(DBuffDIB.is() == true){
-				
-			}*/
 			
 			EndPaint(hwnd, &ps);
 			return ret;
@@ -1235,7 +1215,10 @@ namespace AZ{
 		CODE WINDOW::_EMUP(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){return DEFAULTEVE;}
 		CODE WINDOW::_EMDOWN(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){return DEFAULTEVE;}
 		CODE WINDOW::_EHOLD(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){return DEFAULTEVE;}
-		CODE WINDOW::_ERELATIVESIZE(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){return DEFAULTEVE;}
+		CODE WINDOW::_ERELATIVESIZE(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){
+			if(DBuff.is() == true) HANDLEMAP::Get_Instance().find(hwnd)->Resize(GetSize()[0], GetSize()[1]);
+			return DEFAULTEVE;
+		}
 		
 		
 		LRESULT CALLBACK WINDOW::EBack(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){
@@ -1325,21 +1308,9 @@ namespace AZ{
 					TranslateMessage(&msg);
 					Unicode.is()? DispatchMessageW(&msg) : DispatchMessage(&msg);
 				} else{
-					
-					//GetTime
-					//Sleep
-					//Send GameLoop message
-					
-					
 					if(_GameLoopP != nullptr){
 						_GameLoopP(GameLoopArgs);
-						
-						/*
-						if(1){
-							InvalidateRect(GetHandle(), NULL, true);
-							UpdateWindow(GetHandle());
-						}
-						*/
+						UpdateDisplay();
 					}
 					if(_WaitP != nullptr) _WaitP(WaitArgs);
 					else Wait();
@@ -1351,6 +1322,10 @@ namespace AZ{
 		void WINDOW::GameLoop(void (*_GameLoop)(LPVOID), LPVOID _args){
 			_GameLoopP = _GameLoop;
 			GameLoopArgs = _args;
+		}
+		void WINDOW::UpdateDisplay(){
+			InvalidateRect(GetHandle(), NULL, true);
+			UpdateWindow(GetHandle());
 		}
 		
 		void WINDOW::Wait(void (*_Waitp)(LPVOID), LPVOID _args){
@@ -1378,26 +1353,13 @@ namespace AZ{
 		
 		MOUSE WINDOW::_mouse;
 		
-		std::function<long long(void)> WINDOW::CurrentTimeMicro = [](){
-			std::chrono::system_clock::duration d = std::chrono::system_clock::now().time_since_epoch();
-			return std::chrono::duration_cast<std::chrono::microseconds>(d).count();
-		};
-		
-		std::function<long long(void)> WINDOW::CurrentTimeMilli = [](){
-			std::chrono::system_clock::duration d = std::chrono::system_clock::now().time_since_epoch();
-			return std::chrono::duration_cast<std::chrono::microseconds>(d).count();
-		};
-		
 		void WINDOW::FPSLock(int rate){
-			FrameRate = rate;
+			_fpstimer.Lockfps(rate);
 		}
 		void WINDOW::Wait(){
-			_now = CurrentTimeMilli();
-			if(WaitToNextTime > _now){
-				_wait = WaitToNextTime - _now;
-				std::this_thread::sleep_for(std::chrono::milliseconds(_wait));
-			}
-			WaitToNextTime = CurrentTimeMilli() + 1000 / FrameRate;
+			_fpstimer.countup();
+			_fpstimer.calcfps();
+			_fpstimer.wait();
 		}
 		
 		void WINDOW::InitLambda(){
@@ -1406,9 +1368,46 @@ namespace AZ{
 			_WaitP = nullptr;
 		}
 		
-		long long WINDOW::GetWait(){return _wait;}
-		long long WINDOW::GetNow(){return _now;}
-		long long WINDOW::GetNext(){return WaitToNextTime;}
 		
+		WINDOW::FPSTIMER::FPSTIMER() :
+		FrameRate(60), count(0){
+			a = b = last = std::chrono::system_clock::now();
+			RateTime = 1000.0 / FrameRate;
+		}
+		void WINDOW::FPSTIMER::wait(){
+			a = std::chrono::system_clock::now();
+			work_time = a - b;
+			
+			if(work_time.count() < RateTime){
+				sleep_time = std::chrono::duration<double, std::milli>((RateTime - work_time.count()));
+				//auto msec = std::chrono::duration<double, std::milli>(1);
+				
+				timeBeginPeriod(1);
+				while(sleep_time.count() >= 0){
+					Sleep(1);
+					std::chrono::duration<double, std::milli> tmp = std::chrono::system_clock::now() - b;
+					sleep_time = std::chrono::duration<double, std::milli>((RateTime - tmp.count()));
+				}
+				timeEndPeriod(1);
+			}
+			b = std::chrono::system_clock::now();
+			
+		}
+		void WINDOW::FPSTIMER::calcfps(){
+			if(count >= 100){
+				a = std::chrono::system_clock::now();
+				std::chrono::duration<double, std::micro> delta = a - last;
+				
+				fps = (double)(1000.0 * count / delta.count()) * 1000.0;
+				count = 0;
+				last = std::chrono::system_clock::now();
+			}
+		}
+		void WINDOW::FPSTIMER::countup(){
+			count++;
+		}
+		void WINDOW::FPSTIMER::Lockfps(int n){
+			FrameRate = n;
+		}
 	}
 }

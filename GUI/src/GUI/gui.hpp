@@ -14,7 +14,6 @@
 #include<functional>
 #include<algorithm>
 
-
 #include"../../DEBUG/AzDebug.hpp"
 #include"../defines.hpp"
 #include"../WCLASS/wclass.hpp"
@@ -35,21 +34,57 @@ namespace AZ{
 		class WINDOW;
 		
 		
-		template<class T>
-		class HANDLEMAP : public UTIL::Singleton<HANDLEMAP<T> >{
-			std::map<HWND, T*> hmap;
+		class HANDLEITEMS{
+			WINDOW *window;
+			HDC hdc;
+			HDC hmem;
+			HBITMAP hbm;
+			
+		public:
+			HANDLEITEMS();
+			HANDLEITEMS(WINDOW*);
+			//HANDLEITEMS(const HANDLEITEMS&);
+			//HANDLEITEMS(HANDLEITEMS&&);
+			~HANDLEITEMS();
+			
+			void Resize(int, int);
+			void Set(WINDOW*);
+			WINDOW* GetWINDOW();
+			HDC GetHDC();
+			HBITMAP GetHBITMAP();
+			
+			/*
+			HANDLEITEMS operator=(const HANDLEITEMS &obj){
+				
+				window = obj.window;
+				hmem = obj.hmem;
+				hbm = obj.hbm;
+				
+				return *this;
+			}
+			HANDLEITEMS& operator=(HANDLEITEMS &&obj){
+				
+				window = obj.window;
+				hmem = obj.hmem;
+				hbm = obj.hbm;
+				
+				obj.window = nullptr;
+				obj.hmem = nullptr;
+				obj.hbm = nullptr;
+				
+				return *this;
+			}*/
+		};
+		
+		class HANDLEMAP : public UTIL::Singleton<HANDLEMAP>{
+			std::map<HWND, HANDLEITEMS> hWndMap;
 		public:
 			HANDLEMAP();
 			~HANDLEMAP();
-			
-			T* find(HWND);
-			//bool Register(HWND, T*);
-			bool Register(HWND, T);
+			HANDLEITEMS* find(HWND);
+			bool Register(HWND, WINDOW*);
 			bool Remove(HWND);
-			
-			void DebugPrint();
 		};
-		
 		
 		// template化したい
 		class PROCMAP : public UTIL::Singleton<PROCMAP>{
@@ -410,25 +445,33 @@ namespace AZ{
 			CODE (WINDOW::*evep)(const HWND, const UINT, const WPARAM, const LPARAM);
 			
 			void InitLambda();
-		private:
-			long long WaitToNextTime;
-			int FrameRate;
-			
-			static std::function<long long(void)> CurrentTimeMicro;
-			static std::function<long long(void)> CurrentTimeMilli;
 		public:
-			void FPSLock(int);
 			void Wait();
-			long long _wait;
-			long long _now;
+			void FPSLock(int);
+			void UpdateDisplay();
 			
+		private:
+			class FPSTIMER{
+				int count;
+				int FrameRate;
+				double RateTime;
+				double fps;
+				
+				std::chrono::system_clock::time_point a, b;
+				std::chrono::system_clock::time_point last;
+
+				std::chrono::duration<double, std::milli> work_time;
+				std::chrono::duration<double, std::milli> sleep_time;
+			public:
+				FPSTIMER();
+				void wait();
+				void calcfps();
+				void countup();
+				void Lockfps(int);
+			} _fpstimer;
 		//デバッグ
 		public:
 			void Print();
-			
-			long long GetWait();
-			long long GetNow();
-			long long GetNext();
 		};
 	}
 }
