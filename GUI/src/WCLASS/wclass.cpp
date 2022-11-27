@@ -2,55 +2,39 @@
 
 namespace AZ{
 	namespace GUI{
-		POINT2::POINT2(){
-			point[0] = 0;
-			point[1] = 0;
-		}
-		POINT2::POINT2(int x, int y){
-			point[0] = x;
-			point[1] = y;
-		}
-		POINT2::~POINT2(){}
-		std::array<int, 2> POINT2::Get(){
-			return point;
-		}
-		void POINT2::Set(int x, int y){
-			point[0] = x;
-			point[1] = y;
-		}
 		
 		STATE::STATE(){
-			Size = POINT2(300, 200);
-			Pos = POINT2(CW_USEDEFAULT, CW_USEDEFAULT);
+			Size = UTIL::POINT2<int>({300, 200});
+			Pos = UTIL::POINT2<int>({CW_USEDEFAULT, CW_USEDEFAULT});
 		}
 		STATE::STATE(const int width, const int height){
-			Size = POINT2(width, height);
-			Pos = POINT2(CW_USEDEFAULT, CW_USEDEFAULT);
+			Size = UTIL::POINT2<int>({width, height});
+			Pos = UTIL::POINT2<int>({CW_USEDEFAULT, CW_USEDEFAULT});
 		}
-		STATE::STATE(POINT2 size){
+		STATE::STATE(UTIL::POINT2<int> size){
 			Size = size;
-			Pos = POINT2(CW_USEDEFAULT, CW_USEDEFAULT);
+			Pos = UTIL::POINT2<int>({CW_USEDEFAULT, CW_USEDEFAULT});
 		}
 		STATE::STATE(const int width, const int height, const int x, const int y){
-			Size = POINT2(width, height);
-			Pos = POINT2(x, y);
+			Size = UTIL::POINT2<int>({width, height});
+			Pos = UTIL::POINT2<int>({x, y});
 		}
-		STATE::STATE(POINT2 size, POINT2 pos){
+		STATE::STATE(UTIL::POINT2<int> size, UTIL::POINT2<int> pos){
 			Size = size;
 			Pos = pos;
 		}
 		STATE::~STATE(){}
 		
 		void STATE::SetSize(int width, int height){
-			Size.Set(width, height);
+			Size.Set({width, height});
 		}
-		void STATE::SetSize(POINT2 size){
+		void STATE::SetSize(UTIL::POINT2<int> size){
 			Size = size;
 		}
 		void STATE::SetPos(int x, int y){
-			Pos.Set(x, y);
+			Pos.Set({x, y});
 		}
-		void STATE::SetPos(POINT2 pos){
+		void STATE::SetPos(UTIL::POINT2<int> pos){
 			Pos = pos;
 		}
 		std::array<int, 2> STATE::GetSize(){

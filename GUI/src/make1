@@ -1,0 +1,10 @@
+
+.PHONY: TEST
+TEST:
+	@echo test
+
+
+
+.PHONY: UPDATE
+UPDATE:
+	copy ..\bin ..\sample\000_template

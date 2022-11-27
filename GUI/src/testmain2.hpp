@@ -1,3 +1,5 @@
+#define AZ_STR_ENCODE STR_ENCODE_UNICODE
+
 #include"AAAZLE.hpp"
 #include<dwmapi.h>
 #include"SINGLETON/singleton.hpp"
@@ -11,198 +13,191 @@
 
 #define USE_DEBUG (1)
 
-/*
-class SCROLLONLY : public AZ::GUI::WINDOW{
-	SCROLLINFO scr;
-public:
-	SCROLLONLY(int w, int h) : WINDOW(w, h){
-		scr.cbSize = sizeof(SCROLLINFO);
-		scr.fMask = SIF_ALL;
-		scr.nMin = 0;	scr.nMax = 500;
-		scr.nPage = 100;
-		scr.nPos = 0;
-
-		SetScrollInfo(GetHandle() , SB_CTL , &scr , TRUE);
-		scr.fMask = SIF_POS;
-	}
-	SCROLLONLY(int w, int h, std::string str) : WINDOW(w, h, str){
-		scr.cbSize = sizeof(SCROLLINFO);
-		scr.fMask = SIF_ALL;
-		scr.nMin = 0;	scr.nMax = 500;
-		scr.nPage = 100;
-		scr.nPos = 0;
-
-		SetScrollInfo(GetHandle() , SB_CTL , &scr , TRUE);
-		scr.fMask = SIF_POS;
-	}
-	SCROLLONLY(int w, int h, std::wstring str) : WINDOW(w, h, str){
-		scr.cbSize = sizeof(SCROLLINFO);
-		scr.fMask = SIF_ALL;
-		scr.nMin = 0;	scr.nMax = 500;
-		scr.nPage = 100;
-		scr.nPos = 0;
-
-		SetScrollInfo(GetHandle() , SB_CTL , &scr , TRUE);
-		scr.fMask = SIF_POS;
-	}
-	~SCROLLONLY(){}
-	
-	AZ::GUI::CODE ESCROLL(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){
-		switch(LOWORD(wp)) {
-		case SB_TOP:
-			scr.nPos = scr.nMin;
-			break;
-		case SB_BOTTOM:
-			scr.nPos = scr.nMax;
-			break;
-		case SB_LINEUP:
-			if (scr.nPos) scr.nPos--;
-			break;
-		case SB_LINEDOWN:
-			if (scr.nPos < scr.nMax - 1) scr.nPos++;
-			break;
-		case SB_PAGEUP:
-			scr.nPos -= scr.nPage;
-			break;
-		case SB_PAGEDOWN:
-			scr.nPos += scr.nPage;
-			break;
-		case SB_THUMBPOSITION:
-			scr.nPos = HIWORD(wp);
-			break;
-		}
-		SetScrollInfo(GetHandle() , SB_CTL , &scr , TRUE);
-		return 0;
-	}
-};
-*/
-
 class BTNWINDOW : public AZ::GUI::WINDOW{
 	bool Reg;
 	
 public:
 	BTNWINDOW(int w, int h) : WINDOW(w, h){
+		
 		WClassName(L"BUTTON");
-		SetExStyle(0).SetWindowStyle(WS_CHILD | WS_VISIBLE);
+		SetExStyle(0).SetWindowStyle(WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON);
 	}
+	/*
 	BTNWINDOW(int w, int h, std::string str) : WINDOW(w, h, str){
-		WClassName(L"BUTTON");
-		SetExStyle(0).SetWindowStyle(WS_CHILD | WS_VISIBLE);
+		WClassName("BUTTON");
+		SetExStyle(0).SetWindowStyle(WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON);
 	}
+	*/
 	BTNWINDOW(int w, int h, std::wstring str) : WINDOW(w, h, str){
+		
 		WClassName(L"BUTTON");
-		SetExStyle(0).SetWindowStyle(WS_CHILD | WS_VISIBLE);
+		SetExStyle(0).SetWindowStyle(WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | BS_OWNERDRAW);
 	}
 	~BTNWINDOW(){}
 	
 	AZ::GUI::CODE ECREATE(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){
-		return 0;
+		
+		return DEFAULTEVE;
 	}
 	
+	/*
+	AZ::GUI::CODE EPAINT(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp, HDC hdc){
+		//Rectangle(hdc, 0, 0, 100, 50);
+		return DEFAULTEVE;
+	}*/
 	
-	AZ::GUI::CODE EVENT(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){
+	
+	AZ::GUI::CODE CHILDMSG(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){
+		wchar_t tmp[256];
 		switch(LOWORD(wp)){
 		case ID_BUTTON:
 			#ifdef AZ_DEBUG
-			DEBUG::DebugConsole::Get_Instance().Log("-- Button Clicked -------");
-			DEBUG::DebugConsole::Get_Instance().Log((LPVOID)hwnd);
-			DEBUG::DebugConsole::Get_Instance().Log(GetClassNameW());
-			DEBUG::DebugConsole::Get_Instance().Log(GetTitleW());
-			DEBUG::DebugConsole::Get_Instance().Log("-------------------------");
-			DEBUG::DebugConsole::Get_Instance().Log("");
+			DEBUG::DebugConsole::Get_Instance().Log(DEBUG::DebugConsole::ID_NONE, "-- Button Clicked -------");
+			DEBUG::DebugConsole::Get_Instance().Log(DEBUG::DebugConsole::ID_NONE, (LPVOID)hwnd);
+			DEBUG::DebugConsole::Get_Instance().Log(DEBUG::DebugConsole::ID_NONE, GetClassName());
+			DEBUG::DebugConsole::Get_Instance().Log(DEBUG::DebugConsole::ID_NONE, GetTitle());
+			DEBUG::DebugConsole::Get_Instance().Log(DEBUG::DebugConsole::ID_NONE, "-------------------------");
 			#endif
 			
 			//Enable(false);
 			break;
 		case ID_BUTTON2:
 			#ifdef AZ_DEBUG
-			DEBUG::DebugConsole::Get_Instance().Log("-- Button2 Clicked ------");
-			DEBUG::DebugConsole::Get_Instance().Log((LPVOID)hwnd);
-			DEBUG::DebugConsole::Get_Instance().Log(GetClassNameW());
-			DEBUG::DebugConsole::Get_Instance().Log(GetTitleW());
-			DEBUG::DebugConsole::Get_Instance().Log("-------------------------");
-			DEBUG::DebugConsole::Get_Instance().Log("");
+			DEBUG::DebugConsole::Get_Instance().Log(DEBUG::DebugConsole::ID_NONE, "-- Button2 Clicked ------");
+			DEBUG::DebugConsole::Get_Instance().Log(DEBUG::DebugConsole::ID_NONE, (LPVOID)hwnd);
+			DEBUG::DebugConsole::Get_Instance().Log(DEBUG::DebugConsole::ID_NONE, GetClassName());
+			DEBUG::DebugConsole::Get_Instance().Log(DEBUG::DebugConsole::ID_NONE, GetTitle());
+			DEBUG::DebugConsole::Get_Instance().Log(DEBUG::DebugConsole::ID_NONE, "-------------------------");
 			#endif
 			
 			//Enable(false);
 			break;
 		case ID_BUTTON3:
 			#ifdef AZ_DEBUG
-			DEBUG::DebugConsole::Get_Instance().Log("-- Button3 Clicked ------");
-			DEBUG::DebugConsole::Get_Instance().Log((LPVOID)hwnd);
-			DEBUG::DebugConsole::Get_Instance().Log(GetClassNameW());
-			DEBUG::DebugConsole::Get_Instance().Log(GetTitleW());
-			DEBUG::DebugConsole::Get_Instance().Log("-------------------------");
-			DEBUG::DebugConsole::Get_Instance().Log("");
+			DEBUG::DebugConsole::Get_Instance().Log(DEBUG::DebugConsole::ID_NONE, "-- Button3 Clicked ------");
+			DEBUG::DebugConsole::Get_Instance().Log(DEBUG::DebugConsole::ID_NONE, (LPVOID)hwnd);
+			DEBUG::DebugConsole::Get_Instance().Log(DEBUG::DebugConsole::ID_NONE, GetClassName());
+			DEBUG::DebugConsole::Get_Instance().Log(DEBUG::DebugConsole::ID_NONE, GetTitle());
+			DEBUG::DebugConsole::Get_Instance().Log(DEBUG::DebugConsole::ID_NONE, "-------------------------");
+			#endif
+			
+			MessageBoxW(nullptr, L"Click", L"Button3", MB_OK);
+			
+			#ifdef AZ_DEBUG
+			GetWindowTextW(GetParentHandle(), tmp, 256);
+			DEBUG::DebugConsole::Get_Instance().Log(DEBUG::DebugConsole::ID_NONE, "-- Change Title ------");
+			DEBUG::DebugConsole::Get_Instance().Log(DEBUG::DebugConsole::ID_NONE, (LPVOID)GetParentHandle());
+			DEBUG::DebugConsole::Get_Instance().Log(DEBUG::DebugConsole::ID_NONE, GetParent().GetClassName());
+			DEBUG::DebugConsole::Get_Instance().Log(DEBUG::DebugConsole::ID_NONE, GetParent().GetTitle());
+			DEBUG::DebugConsole::Get_Instance().Log(DEBUG::DebugConsole::ID_NONE, tmp);
+			DEBUG::DebugConsole::Get_Instance().Log(DEBUG::DebugConsole::ID_NONE, "-------------------------");
 			#endif
 			
 			//Enable(false);
 			break;
 		case ID_BUTTON4:
 			#ifdef AZ_DEBUG
-			DEBUG::DebugConsole::Get_Instance().Log("-- Button4 Clicked ------");
-			DEBUG::DebugConsole::Get_Instance().Log((LPVOID)hwnd);
-			DEBUG::DebugConsole::Get_Instance().Log(GetClassNameW());
-			DEBUG::DebugConsole::Get_Instance().Log(GetTitleW());
-			DEBUG::DebugConsole::Get_Instance().Log(msg);
-			DEBUG::DebugConsole::Get_Instance().Log("-------------------------");
-			DEBUG::DebugConsole::Get_Instance().Log("");
+			DEBUG::DebugConsole::Get_Instance().Log(DEBUG::DebugConsole::ID_NONE, "-- Button4 Clicked ------");
+			DEBUG::DebugConsole::Get_Instance().Log(DEBUG::DebugConsole::ID_NONE, (LPVOID)hwnd);
+			DEBUG::DebugConsole::Get_Instance().Log(DEBUG::DebugConsole::ID_NONE, GetClassName());
+			DEBUG::DebugConsole::Get_Instance().Log(DEBUG::DebugConsole::ID_NONE, GetTitle());
+			DEBUG::DebugConsole::Get_Instance().Log(DEBUG::DebugConsole::ID_NONE, msg);
+			DEBUG::DebugConsole::Get_Instance().Log(DEBUG::DebugConsole::ID_NONE, "-------------------------");
 			#endif
+			
+			MessageBoxW(nullptr, L"Click", L"Button4", MB_OK);
 			
 			break;
 		}
 		return 1;
 	}
-	
-	/*
 	AZ::GUI::CODE EPAINT(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp, HDC hdc){
+		#ifdef AZ_DEBUG
+		DEBUG::DebugConsole::Get_Instance().Log(DEBUG::DebugConsole::ID_NONE, L"epaint");
+		#endif
+		auto tmp = SelectObject(hdc, CreateSolidBrush(RGB(0xff, 0, 0)));
+		PatBlt(hdc, 0, 0, 200, 200, PATCOPY);
+		DeleteObject(SelectObject(hdc, tmp));
 		
-		Rectangle(hdc , 0 , 0 , GetSize()[0], GetSize()[1]);
+		//Rectangle(hdc , 0 , 0 , GetSize()[0], GetSize()[1]);
 		LineTo(hdc, GetSize()[0], GetSize()[1]);
 		MoveToEx(hdc, 0, GetSize()[1], NULL);
 		LineTo(hdc, GetSize()[0], 0);
 		
-		return 1;
+		return DEFAULTEVE;
 	}
-	*/
 };
 
 class MYWINDOW : public AZ::GUI::WINDOW{
-	
+	bool title;
 public:
 	MYWINDOW(int w, int h) : WINDOW(w, h){
 		WClassStyle(CS_HREDRAW | CS_VREDRAW);
 		setTITLEDWINDOW(true).setVISIBLE(true);
 		setSCROLL(false, true).setCAPTIONBOX(false, false, true);
-		WindowPos(0, 0).SetExStyle(0);
+		setCLIPCHILDREN(true);
+		WindowPos(0, 0).SetExStyle(WS_EX_OVERLAPPEDWINDOW);
+		title = false;
 	}
+	/*
 	MYWINDOW(int w, int h, std::string str) : WINDOW(w, h, str){
 		WClassStyle(CS_HREDRAW | CS_VREDRAW);
 		setTITLEDWINDOW(true).setVISIBLE(true);
 		setSCROLL(false, true).setCAPTIONBOX(false, false, true);
-		WindowPos(0, 0).SetExStyle(0);
+		setCLIPCHILDREN(true);
+		WindowPos(0, 0).SetExStyle(WS_EX_OVERLAPPEDWINDOW);
 	}
+	*/
+	
 	MYWINDOW(int w, int h, std::wstring str) : WINDOW(w, h, str){
 		WClassStyle(CS_HREDRAW | CS_VREDRAW);
 		setTITLEDWINDOW(true).setVISIBLE(true);
-		setSCROLL(false, true).setCAPTIONBOX(false, false, true);
-		WindowPos(0, 0).SetExStyle(0);
+		setSCROLL(false, true).setCAPTIONBOX(false, true, true);
+		setCLIPCHILDREN(false);
+		WindowPos(0, 0).SetExStyle(WS_EX_OVERLAPPEDWINDOW);
+		title = false;
 	}
 	~MYWINDOW(){}
 	AZ::GUI::CODE ECREATE(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){
 		
 		//it changes window title
-		ChangeTitle(L"( つ•̀ω•́)つ・・*:・:・゜:==≡≡Σ=͟͟͞͞(✡)`Д´）ｸﾞﾍｯ!");
+		//ChangeTitle(L"( つ•̀ω•́)つ・・*:・:・゜:==≡≡Σ=͟͟͞͞(✡)`Д´）ｸﾞﾍｯ!");
 		return 0;
 	}
 	AZ::GUI::CODE ECLOSE(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){
-		int result = MessageBox(hwnd, "end", "Confirmation", MB_YESNO);
+		int result = MessageBoxW(hwnd, L"end", L"Confirmation", MB_YESNO);
 		if (IDYES != result) return 0;
 		return 1;
 	}
 	AZ::GUI::CODE EDESTROY(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){
 		PostQuitMessage(0);
 		return 0;
+	}
+	AZ::GUI::CODE EMDOWN(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){
+		ChangeTitle(L"( つ•̀ω•́)つ・・*:・:・゜:==≡≡Σ=͟͟͞͞(✡)`Д´）ｸﾞﾍｯ!");
+		switch(msg){
+		case WM_LBUTTONDOWN:
+			#ifdef AZ_DEBUG
+			DEBUG::DebugConsole::Get_Instance().Log(DEBUG::DebugConsole::ID_NONE, "-- Clicked ------");
+			DEBUG::DebugConsole::Get_Instance().Log(DEBUG::DebugConsole::ID_NONE, GetTitle());
+			DEBUG::DebugConsole::Get_Instance().Log(DEBUG::DebugConsole::ID_NONE, "-------------------------");
+			DEBUG::DebugConsole::Get_Instance().Log(DEBUG::DebugConsole::ID_NONE, "");
+			#endif
+			
+			if(title){
+				title = false;
+				SendMessageW(GetHandle(), WM_SETTEXT, 0, (LPARAM)L"あいうえお");
+			} else{
+				title = true;
+				SendMessageW(GetHandle(), WM_SETTEXT, 0, (LPARAM)L"( つ•̀ω•́)つ・・*:・:・゜:==≡≡Σ=͟͟͞͞(✡)`Д´）ｸﾞﾍｯ!");
+			}
+			
+			InvalidateRect(hwnd, NULL, TRUE);
+			UpdateWindow(hwnd);
+			break;
+		}
+		
+		return 1;
 	}
 	
 	
@@ -220,7 +215,6 @@ public:
 		
 		return DEFAULTEVE;
 	}
-	
 };
 
 
@@ -278,7 +272,7 @@ public:
 	AZ::GUI::CODE ERELATIVESIZE(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp){
 		#ifdef AZ_DEBUG
 		std::string str = std::to_string(GetSize()[0]) + std::string(" : ") + std::to_string(GetSize()[1]);
-		DEBUG::DebugConsole::Get_Instance().Log(str);
+		DEBUG::DebugConsole::Get_Instance().Log(DEBUG::DebugConsole::ID_NONE, str);
 		#endif
 		ReSizeWindow(GetParent().GetSize()[0], GetParent().GetSize()[1]);
 		//InvalidateRect(hwnd ,NULL ,true);
@@ -293,7 +287,7 @@ public:
 		if(Image != nullptr) g->DrawImage(Image, 0, 0);
 		else {
 			#ifdef AZ_DEBUG
-			DEBUG::DebugConsole::Get_Instance().Log("Image is nullptr");
+			DEBUG::DebugConsole::Get_Instance().Log(DEBUG::DebugConsole::ID_NONE, "Image is nullptr");
 			#endif
 		}
 		delete g;
@@ -309,3 +303,5 @@ public:
 		Image = new Gdiplus::Bitmap(_str.c_str());
 	}
 };
+
+

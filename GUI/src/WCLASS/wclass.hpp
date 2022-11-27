@@ -6,26 +6,16 @@
 #include<map>
 #include<iostream>
 
+#include"../UTIL/utility.hpp"
+
 
 
 namespace AZ{
 	namespace GUI{
 		
-		class POINT2{
-			std::array<int, 2> point;
-		
-		public:
-			POINT2();
-			POINT2(const int, const int);
-			~POINT2();
-			
-			std::array<int, 2> Get();
-			void Set(const int, const int);
-		};
-		
 		class STATE{
-			POINT2 Size;
-			POINT2 Pos;
+			UTIL::POINT2<int> Size;
+			UTIL::POINT2<int> Pos;
 			
 			HWND hwnd;
 			
@@ -33,16 +23,16 @@ namespace AZ{
 			STATE();
 			STATE(const int, const int);
 			STATE(const int, const int, const int, const int);
-			STATE(POINT2);
-			STATE(POINT2, POINT2);
+			STATE(UTIL::POINT2<int>);
+			STATE(UTIL::POINT2<int>, UTIL::POINT2<int>);
 			~STATE();
 			
 			void SetSize(const int, const int);
-			void SetSize(POINT2);
+			void SetSize(UTIL::POINT2<int>);
 			std::array<int, 2> GetSize();
 			
 			void SetPos(const int, const int);
-			void SetPos(POINT2);
+			void SetPos(UTIL::POINT2<int>);
 			std::array<int, 2> GetPos();
 			
 			void SetHandle(HWND);

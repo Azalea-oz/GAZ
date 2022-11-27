@@ -10,7 +10,6 @@
 #include<cstdio>
 
 
-
 #include"defines.hpp"
 
 #include"CTRL/ctrolor.hpp"
@@ -18,4 +17,5 @@
 #include"PAINT/paint.hpp"
 #include"WCLASS/wclass.hpp"
 #include"GUI/gui.hpp"
+
 

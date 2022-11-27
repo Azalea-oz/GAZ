@@ -1,6 +1,11 @@
 #include"event.hpp"
 
-
+#ifdef AZ_DEBUG
+#if AZ_DEBUG > 1
+#warning "in event, AZ_DEBUG higher than 1."
+#endif
+#include"../../DEBUG/AzDebug.hpp"
+#endif
 
 namespace AZ{
 	namespace GUI{
@@ -29,9 +34,9 @@ namespace AZ{
 				CVTMSGWC(WM_SYSCOLORCHANGE);
 				CVTMSGWC(WM_ENDSESSION);
 				CVTMSGWC(WM_SHOWWINDOW);
-				//CVTMSGWC(WM_CTLCOLOR);
+				//CVTMSGWC(0x0019, WM_CTLCOLOR);	// this message used by 16bit operation. these are replaced WM_CTLCOLORBTN, WM_CTLCOLOREDIT, WM_CTLCOLORDLG, WM_CTLCOLORLISTBOX, WM_CTLCOLORSCROLLBAR and WM_CTLCOLORSTATIC.
 				CVTMSGWC(WM_WININICHANGE);
-				//CVTMSGWC(WM_SETTINGCHANGE);
+				//CVTMSGWC(0x001B, WM_SETTINGCHANGE);
 				CVTMSGWC(WM_DEVMODECHANGE);
 				CVTMSGWC(WM_ACTIVATEAPP);
 				CVTMSGWC(WM_FONTCHANGE);
@@ -63,7 +68,7 @@ namespace AZ{
 				CVTMSGWC(WM_WINDOWPOSCHANGING);
 				CVTMSGWC(WM_WINDOWPOSCHANGED);
 				CVTMSGWC(WM_POWER);
-				//CVTMSGWC(WM_COPYGLOBALDATA);
+				//CVTMSGWC(0x0049, WM_COPYGLOBALDATA);
 				CVTMSGWC(WM_COPYDATA);
 				CVTMSGWC(WM_CANCELJOURNAL);
 				CVTMSGWC(WM_NOTIFY);
@@ -101,12 +106,202 @@ namespace AZ{
 				CVTMSGWC(WM_NCXBUTTONUP);
 				CVTMSGWC(WM_NCXBUTTONDBLCLK);
 				CVTMSGWC(EM_GETSEL);
+				CVTMSGWC(EM_SETSEL);
+				CVTMSGWC(EM_GETRECT);
+				CVTMSGWC(EM_SETRECT);
+				CVTMSGWC(EM_SETRECTNP);
+				CVTMSGWC(EM_SCROLL);
+				CVTMSGWC(EM_LINESCROLL);
+				CVTMSGWC(EM_SCROLLCARET);
+				CVTMSGWC(EM_GETMODIFY);
+				CVTMSGWC(EM_SETMODIFY);
+				CVTMSGWC(EM_GETLINECOUNT);
+				CVTMSGWC(EM_LINEINDEX);
+				CVTMSGWC(EM_SETHANDLE);
+				CVTMSGWC(EM_GETHANDLE);
+				CVTMSGWC(EM_GETTHUMB);
+				CVTMSGWC(EM_LINELENGTH);
+				CVTMSGWC(EM_REPLACESEL);
+				//CVTMSGWC(0x00C3, EM_SETFONT);
+				CVTMSGWC(EM_GETLINE);
+				CVTMSGWC(EM_LIMITTEXT | EM_SETLIMITTEXT);
+				//CVTMSGWC(0x00C5, EM_SETLIMITTEXT);
+				CVTMSGWC(EM_CANUNDO);
+				CVTMSGWC(EM_UNDO);
+				CVTMSGWC(EM_FMTLINES);
+				CVTMSGWC(EM_LINEFROMCHAR);
+				//CVTMSGWC(0x00CA, EM_SETWORDBREAK);
+				CVTMSGWC(EM_SETTABSTOPS);
+				CVTMSGWC(EM_SETPASSWORDCHAR);
+				CVTMSGWC(EM_EMPTYUNDOBUFFER);
+				CVTMSGWC(EM_GETFIRSTVISIBLELINE);
+				CVTMSGWC(EM_SETREADONLY);
+				CVTMSGWC(EM_SETWORDBREAKPROC);
+				CVTMSGWC(EM_GETWORDBREAKPROC);
+				CVTMSGWC(EM_GETPASSWORDCHAR);
+				CVTMSGWC(EM_SETMARGINS);
+				CVTMSGWC(EM_GETMARGINS);
+				CVTMSGWC(EM_GETLIMITTEXT);
+				CVTMSGWC(EM_POSFROMCHAR);
+				CVTMSGWC(EM_CHARFROMPOS);
+				CVTMSGWC(EM_SETIMESTATUS);
+				CVTMSGWC(EM_GETIMESTATUS);
+				CVTMSGWC(SBM_SETPOS);
+				CVTMSGWC(SBM_GETPOS);
+				CVTMSGWC(SBM_SETRANGE);
+				CVTMSGWC(SBM_GETRANGE);
+				CVTMSGWC(SBM_ENABLE_ARROWS);
+				CVTMSGWC(SBM_SETRANGEREDRAW);
+				CVTMSGWC(SBM_SETSCROLLINFO);
+				CVTMSGWC(SBM_GETSCROLLINFO);
+				CVTMSGWC(SBM_GETSCROLLBARINFO);
+				CVTMSGWC(BM_GETCHECK);
+				CVTMSGWC(BM_SETCHECK);
+				CVTMSGWC(BM_GETSTATE);
+				CVTMSGWC(BM_SETSTATE);
+				CVTMSGWC(BM_SETSTYLE);
+				CVTMSGWC(BM_CLICK);
+				CVTMSGWC(BM_GETIMAGE);
+				CVTMSGWC(BM_SETIMAGE);
+				//CVTMSGWC(0x00F8, BM_SETDONTCLICK);
+				CVTMSGWC(WM_INPUT);
+				CVTMSGWC(WM_KEYDOWN | WM_KEYFIRST);
+				CVTMSGWC(WM_KEYUP);
+				CVTMSGWC(WM_CHAR);
+				CVTMSGWC(WM_DEADCHAR);
+				CVTMSGWC(WM_SYSKEYDOWN);
+				CVTMSGWC(WM_SYSKEYUP);
+				CVTMSGWC(WM_SYSCHAR);
+				CVTMSGWC(WM_SYSDEADCHAR);
+				CVTMSGWC(WM_UNICHAR | WM_KEYLAST /*| WM_WNT_CONVERTREQUESTEX*/);
+				//CVTMSGWC(WM_CONVERTREQUEST);
+				//CVTMSGWC(WM_CONVERTRESULT);
+				//CVTMSGWC(WM_INTERIM);
+				CVTMSGWC(WM_IME_STARTCOMPOSITION);
+				CVTMSGWC(WM_IME_ENDCOMPOSITION);
+				CVTMSGWC(WM_IME_COMPOSITION | WM_IME_KEYLAST);
+				CVTMSGWC(WM_INITDIALOG);
+				CVTMSGWC(WM_COMMAND);
+				CVTMSGWC(WM_SYSCOMMAND);
+				CVTMSGWC(WM_TIMER);
+				CVTMSGWC(WM_HSCROLL);
+				CVTMSGWC(WM_VSCROLL);
+				CVTMSGWC(WM_INITMENU);
+				CVTMSGWC(WM_INITMENUPOPUP);
+				//CVTMSGWC(WM_SYSTIMER);	//[obsolete]
+				CVTMSGWC(WM_MENUSELECT);
+				CVTMSGWC(WM_MENUCHAR);
+				CVTMSGWC(WM_ENTERIDLE);
+				CVTMSGWC(WM_MENURBUTTONUP);
+				CVTMSGWC(WM_MENUDRAG);
+				CVTMSGWC(WM_MENUGETOBJECT);
+				CVTMSGWC(WM_UNINITMENUPOPUP);
+				CVTMSGWC(WM_MENUCOMMAND);
+				CVTMSGWC(WM_CHANGEUISTATE);
+				CVTMSGWC(WM_UPDATEUISTATE);
+				CVTMSGWC(WM_QUERYUISTATE);
+				//CVTMSGWC(WM_LBTRACKPOINT);
+				CVTMSGWC(WM_CTLCOLORMSGBOX);
+				CVTMSGWC(WM_CTLCOLOREDIT);
+				CVTMSGWC(WM_CTLCOLORLISTBOX);
+				CVTMSGWC(WM_CTLCOLORBTN);
+				CVTMSGWC(WM_CTLCOLORDLG);
+				CVTMSGWC(WM_CTLCOLORSCROLLBAR);
+				CVTMSGWC(WM_CTLCOLORSTATIC);
+				CVTMSGWC(WM_MOUSEFIRST | WM_MOUSEMOVE);
+				CVTMSGWC(WM_LBUTTONDOWN);
+				CVTMSGWC(WM_LBUTTONUP);
+				CVTMSGWC(WM_LBUTTONDBLCLK);
+				CVTMSGWC(WM_RBUTTONDOWN);
+				CVTMSGWC(WM_RBUTTONUP);
+				CVTMSGWC(WM_RBUTTONDBLCLK);
+				CVTMSGWC(WM_MBUTTONDOWN);
+				CVTMSGWC(WM_MBUTTONUP);
+				CVTMSGWC(WM_MBUTTONDBLCLK | WM_MOUSELAST);
+				CVTMSGWC(WM_MOUSEWHEEL);
 				
 			default:
-				return std::to_wstring(msg);
+				return std::wstring(L"UNKNOW MSG : ") + std::to_wstring(msg);
 			}
 		}
 		
+		_EVENT::_EVENT(){}
+		_EVENT::~_EVENT(){}
+
+		void _EVENT::Register(UINT m, EVENTFUNCP fp){
+			auto itr = msg.find(m);
+			if(itr == msg.end()){
+				std::vector<EVENTFUNCP> tmp;
+				msg.insert(std::make_pair(m, tmp));
+				itr = msg.find(m);
+			}
+			itr->second.push_back(fp);
+		}
+		bool _EVENT::UnRegister(UINT m, EVENTFUNCP fp){
+			auto itr = msg.find(m);
+			if(itr != msg.end()){
+				for(auto it = itr->second.begin(); it != itr->second.end(); ++it){
+					if(*it == fp){
+						itr->second.erase(it);
+						break;
+					}
+				}
+			} else return false;
+			
+			return true;
+		}
+		
+		void _EVENT::Register(EVENT_BASE *ev, std::wstring evName){
+			auto itr = RegList.find(ev);
+			if(itr == RegList.end()){
+				ev->Register();
+				RegList.insert(std::make_pair(ev, evName));
+			} else{
+				#ifdef AZ_DEBUG
+					DEBUG::DebugConsole::Get_Instance().Log(DEBUG::DebugConsole::ID_NONE, L"This event has been registerd");
+				#endif
+			}
+		}
+		bool _EVENT::UnRegister(EVENT_BASE *ev){
+			auto itr = RegList.find(ev);
+			if(itr != RegList.end()){
+				ev->UnRegister();
+				RegList.erase(ev);
+			} else{
+				#ifdef AZ_DEBUG
+					DEBUG::DebugConsole::Get_Instance().Log(DEBUG::DebugConsole::ID_NONE, L"This event hasn't been exist");
+				#endif
+				return false;
+			}
+			return true;
+		}
+		
+		std::vector<AZ::GUI::CODE> _EVENT::Do(HWND hwnd, UINT m, WPARAM wp, LPARAM lp){
+			std::vector<AZ::GUI::CODE> ret;
+			int elem;
+			auto itr = msg.find(m);
+			if(itr != msg.end()){
+				for(auto fc : itr->second){
+					ret.push_back(fc(hwnd, m, wp, lp));
+				}
+			}
+			
+			return ret;
+		}
+		std::list< std::wstring > _EVENT::GetRegList(){
+			int Size = RegList.size();
+			
+			std::list< std::wstring > ls(Size);
+			
+			auto itrList = ls.begin();
+			auto itrRegList = RegList.begin();
+			for(; itrRegList != RegList.end(); ++itrList, ++itrRegList){
+				*itrList = itrRegList->second;
+			}
+			return ls;
+		}
 	
 	}
+	
+	
 }

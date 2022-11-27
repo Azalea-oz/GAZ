@@ -1,0 +1,1 @@
+mingw32-make build64-exe-g

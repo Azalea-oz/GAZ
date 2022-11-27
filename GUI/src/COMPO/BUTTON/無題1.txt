@@ -1,0 +1,35 @@
+Button Type
+	3State
+	Auto3State
+	
+	CheckBox
+	AutoCheckBox
+	
+	Radio
+	AutoRadio
+	
+	
+
+Button Paint
+	BITMAP
+	ICON
+	
+Button Text
+	TOP
+	BOTTOM
+	CENTER
+	
+	LEFT
+	RIGHT
+	
+	LEFTTEXT
+	
+	MULTITEXT
+	
+Button Display
+	FLAT
+	PUSHLIKE
+	
+Button Notify
+	NOTIFY
+	

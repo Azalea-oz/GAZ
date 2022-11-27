@@ -14,12 +14,19 @@
 #include<functional>
 #include<algorithm>
 
+#ifdef AZ_DEBUG
+#if AZ_DEBUG > 1
+#warning "in gui, AZ_DEBUG higher than 1."
+#endif
 #include"../../DEBUG/AzDebug.hpp"
+#endif
+
 #include"../defines.hpp"
 #include"../WCLASS/wclass.hpp"
 #include"../PAINT/paint.hpp"
 #include"../EVENT/event.hpp"
 #include"../UTIL/utility.hpp"
+#include"../SINGLETON/singleton.hpp"
 
 #define WINDOW_CHILD 0xffff
 
@@ -29,10 +36,13 @@
 
 namespace AZ{
 	namespace GUI{
+		
 		typedef int CODE;
 		
 		class WINDOW;
+		class HANDLEMAP;
 		
+		using WINDOWPTR =  WINDOW*;
 		
 		class HANDLEITEMS{
 			WINDOW *window;
@@ -114,26 +124,193 @@ namespace AZ{
 		};
 		*/
 		
-		
-		class WINDOW : public STATE{
-			WNDCLASSEX wcex;
-			WNDCLASSEXW wcexw;
-			static WINDOW* tmp;
+		class WREG{
+			HWND *hwnd;
+			const HWND GetHandle();
+		public:
+			WREG();
+			bool Register();
 			
+			void SetWndHandle(const HWND*);
+			
+		private:
 			UINT cbSize;
+		public:
+			void SetSize(const UINT);
+			const UINT GetSize();
+			
+		/////////////////////////////////////
+		// Window class
+		#if AZ_STR_ENCODE == STR_ENCODE_SJIS
+		private:
+			WNDCLASSEXA wcex;
+			
+		public:
+			void SetWcex(WNDCLASSEXA);
+			WNDCLASSEXA GetWcex();
+		
+		#elif AZ_STR_ENCODE == STR_ENCODE_UNICODE
+		private:
+			WNDCLASSEXW wcex;
+			
+		public:
+			void SetWcex(WNDCLASSEXW);
+			WNDCLASSEXW GetWcex();
+		#endif
+		/////////////////////////////////////
+			
+		/////////////////////////////////////
+		// Window class style
+		private:
 			UINT style;
+			void SetStyle(const UINT, const HWND);
+			void AddStyle(const UINT, const HWND);
+			
+		public:
+			void SetStyle(const UINT);
+			void AddStyle(const UINT);
+			const UINT GetStyle();
+		/////////////////////////////////////
+			
+		/////////////////////////////////////
+		// Window Proc
+		private:
 			WNDPROC lpfnWndProc;
+			void SetWndProc(WNDPROC, HWND);
+			const WNDPROC GetWndProc(HWND);
+			
+			WNDPROC DefProc;
+			
+		public:
+			void SetWndProc(WNDPROC);
+			const WNDPROC GetWndProc();
+			
+			void SetDefProc(const WNDPROC);
+			const WNDPROC GetDefProc();
+		/////////////////////////////////////
+			
+		/////////////////////////////////////
+		// Window extra memories
+		private:
 			int cbClsExtra;
 			int cbWndExtra;
+			void SetClsExtra(const int, HWND);
+			void SetWndExtra(const int, HWND);
+			const int GetClsExtra(HWND);
+			const int GetWndExtra(HWND);
+			
+		public:
+			void SetClsExtra(const int);
+			void SetWndExtra(const int);
+			const int GetClsExtra();
+			const int GetWndExtra();
+		/////////////////////////////////////
+			
+		/////////////////////////////////////
+		// Windnow instance
+		private:
 			HINSTANCE hInstance;
+			void SetInstance(const HINSTANCE, HWND);
+			const HINSTANCE GetInstance(HWND);
+			
+		public:
+			void SetInstance(const HINSTANCE);
+			const HINSTANCE GetInstance();
+		/////////////////////////////////////
+			
+		/////////////////////////////////////
+		// Window icon
+		private:
 			HICON hIcon;
 			HICON hIconSm;
+			void SetIcon(HICON, HWND);
+			void SetIconSm(HICON, HWND);
+			const HICON GetIcon(HWND);
+			const HICON GetIconSm(HWND);
+			
+		public:
+			void SetIcon(HICON);
+			void SetIconSm(HICON);
+			const HICON GetIcon();
+			const HICON GetIconSm();
+		/////////////////////////////////////
+			
+		/////////////////////////////////////
+		// Window cursor
+		private:
 			HCURSOR hCursor;
+			void SetCursor(HCURSOR, HWND);
+			const HCURSOR GetCursor(HWND);
+			
+		public:
+			void SetCursor(HCURSOR);
+			const HCURSOR GetCursor();
+		/////////////////////////////////////
+			
+		/////////////////////////////////////
+		// Window Background color
+		private:
 			HBRUSH hbrBackground;
+			void SetBKGColor(const HBRUSH, HWND);
+			const HBRUSH GetBKGColor(HWND);
+			
+		public:
+			void SetBKGColor(const HBRUSH);
+			const HBRUSH GetBKGColor();
+		/////////////////////////////////////
+			
+		/////////////////////////////////////
+		// Window menu name
+		#if AZ_STR_ENCODE == STR_ENCODE_SJIS
+		private:
 			std::string lpszMenuName;
-			std::wstring lpszMenuNameW;
+			void SetMenuName(const std::string, HWND);
+			const std::string GetMenuName(HWND);
+		public:
+			void SetMenuName(const std::string);
+			const std::string GetMenuName();
+			
+		#elif AZ_STR_ENCODE == STR_ENCODE_UNICODE
+		private:
+			std::wstring lpszMenuName;
+			void SetMenuName(const std::wstring, HWND);
+			const std::wstring GetMenuName(HWND);
+			
+		public:
+			void SetMenuName(const std::wstring);
+			const std::wstring GetMenuName();
+		#endif
+		/////////////////////////////////////
+			
+		/////////////////////////////////////
+		// Window class name
+		#if AZ_STR_ENCODE == STR_ENCODE_SJIS
+		private:
 			std::string lpszClassName;
-			std::wstring lpszClassNameW;
+			void SetClassName(const std::string, HWND);
+			const std::string GetClassName(HWND);
+		public:
+			void SetClassName(const std::string);
+			const std::string GetClassName();
+		#elif AZ_STR_ENCODE == STR_ENCODE_UNICODE
+		private:
+			std::wstring lpszClassName;
+			void SetClassName(const std::wstring, HWND);
+			const std::wstring GetClassName(HWND);
+		#endif
+			
+		public:
+			void SetClassName(const std::wstring);
+			const std::wstring GetClassName();
+		/////////////////////////////////////
+		};
+		
+		class WINDOW : public STATE{
+			
+			WREG *wreg;
+			static WINDOW* tmp;
+			
+			bool Error;
 			
 			void InitWindowClass();
 			void InitFrameRate(int);
@@ -141,8 +318,16 @@ namespace AZ{
 			//function pointer
 			using WPROC = LRESULT (WINDOW::*)(HWND, UINT, WPARAM, LPARAM);
 			WPROC Proc;
-			static LRESULT CALLBACK EntryProcA(HWND, UINT, WPARAM, LPARAM);
-			static LRESULT CALLBACK EntryProcW(HWND, UINT, WPARAM, LPARAM);
+			using ENTRYPROC = LRESULT CALLBACK (*)(HWND, UINT, WPARAM, LPARAM);
+			
+		#if AZ_STR_ENCODE == STR_ENCODE_SJIS
+			static LRESULT CALLBACK EntryProc(HWND, UINT, WPARAM, LPARAM);
+		#elif AZ_STR_ENCODE == STR_ENCODE_UNICODE
+			static LRESULT CALLBACK EntryProc(HWND, UINT, WPARAM, LPARAM);
+		#endif
+			
+		public:
+			static ENTRYPROC GetEntry();
 			
 		public:
 			//window class option
@@ -161,8 +346,11 @@ namespace AZ{
 			WINDOW& WClassName(const std::string);
 			WINDOW& WClassName(const std::wstring);
 			
-			std::string GetClassNameA();
-			std::wstring GetClassNameW();
+		#if AZ_STR_ENCODE == STR_ENCODE_SJIS
+			std::string GetClassName();
+		#elif AZ_STR_ENCODE == STR_ENCODE_UNICODE
+			std::wstring GetClassName();
+		#endif
 			
 			//register window
 			WINDOW& Register();
@@ -183,32 +371,42 @@ namespace AZ{
 				
 				void Enable(bool);
 				bool is();
-			} Unicode, DBuff, DBuffDIB, DClick, AutoReSize;
+			} Unicode, DBuff, DBuffDIB, DClick, AutoReSize, GPUAPI, Borderless;
 			
+			struct EVFLAG{
+				bool sizing;
+				
+				EVFLAG();
+			} EvFlag;
 		protected:
+			#if AZ_STR_ENCODE == STR_ENCODE_SJIS
 			const WNDCLASSEX GetWcex();
-			
-			
+			#elif AZ_STR_ENCODE == STR_ENCODE_UNICODE
+			const WNDCLASSEXW GetWcex();
+			#endif
 			
 		// TITLE
 		protected:
+			#if AZ_STR_ENCODE == STR_ENCODE_SJIS
 			std::string _Title;
-			std::wstring _TitleW;
-			
-			/*
-			std::string _Menu;
-			std::wstring _MenuW;
-			*/
+			#elif AZ_STR_ENCODE == STR_ENCODE_UNICODE
+			std::wstring _Title;
+			#endif
 			
 		public:
+			#if AZ_STR_ENCODE == STR_ENCODE_SJIS
 			WINDOW& SetTitle(const std::string);
-			WINDOW& SetTitle(const std::wstring);
-			
-			std::string GetTitleA();
-			std::wstring GetTitleW();
-			
+			std::string GetTitle();
 			bool ChangeTitle(const std::string);
+			
+			#elif AZ_STR_ENCODE == STR_ENCODE_UNICODE
+			WINDOW& SetTitle(const std::wstring);
+			std::wstring GetTitle();
 			bool ChangeTitle(const std::wstring);
+			#endif
+			
+			
+			
 			
 			/*
 			WINDOW& SetMenu(const std::string);
@@ -277,34 +475,37 @@ namespace AZ{
 			HMENU Menu;
 			
 			std::vector<std::pair<HMENU, WINDOW*> > ChildWindow;
-			bool Border;
 		public:
+			
 			WINDOW();
 			WINDOW(const int, const int);
+			
+			#if AZ_STR_ENCODE == STR_ENCODE_SJIS
 			WINDOW(const int, const int, const std::string);
 			WINDOW(const int, const int, const std::string, const std::string);
-			WINDOW(const int, const int, const std::wstring);
-			WINDOW(const int, const int, const std::wstring, const std::wstring);
 			WINDOW(const std::string);
 			WINDOW(const std::string, const std::string);
+			#elif AZ_STR_ENCODE == STR_ENCODE_UNICODE
+			WINDOW(const int, const int, const std::wstring);
+			WINDOW(const int, const int, const std::wstring, const std::wstring);
 			WINDOW(const std::wstring);
 			WINDOW(const std::wstring, const std::wstring);
+			#endif
+			
 			virtual ~WINDOW();
 			
 			WINDOW& WindowSize(const int, const int);
 			WINDOW& WindowPos(const int, const int);
 			
 			
-			WINDOW& Borderless();
-			
 			HINSTANCE GetInst();
 			
 			void ResizeClient();
 			void ReSizeWindow(const int, const int);
 			
-			void Create();
-			void Create(const std::string);
-			void Create(const std::wstring);
+			bool Create();
+			bool Create(const std::string);
+			bool Create(const std::wstring);
 			
 			void Child(WINDOW&, const HMENU);
 			void Child(bool);
@@ -312,7 +513,9 @@ namespace AZ{
 			
 			void SetMenuId(const HMENU);
 			
+			bool isSysProc(UINT);
 			LRESULT WindowProc(HWND, UINT, WPARAM, LPARAM);
+			LRESULT SysProc(HWND, UINT, WPARAM, LPARAM);
 			using PROC = LRESULT (*)(HWND, UINT, WPARAM, LPARAM);
 			
 			PROC CustomProc;
@@ -330,6 +533,7 @@ namespace AZ{
 		public:
 			void SetParent(WINDOW*);
 			WINDOW& GetParent();
+			WINDOW& GetTopParent();
 		protected:
 			void SetHandle(const HWND);
 			void SetParentHandle(const HWND);
@@ -340,11 +544,15 @@ namespace AZ{
 			
 		private:
 			bool RegisterFlag;
-			WNDPROC DefProc;
+			
 			//LRESULT CALLBACK (*CallProc)(HWND, UINT, WPARAM, LPARAM);
 			void InitCodeArray();
 		protected:
 			
+		public:
+			CODE Render(const HWND hwnd, const UINT msg, const WPARAM wp, const LPARAM lp);
+			
+		protected:
 			
 			void ESetProc();
 			std::array<CODE (WINDOW::*)(const HWND, const UINT, const WPARAM, const LPARAM), 24> CodeFuncArray;
@@ -356,7 +564,8 @@ namespace AZ{
 			virtual CODE ECLOSE(const HWND, const UINT, const WPARAM, const LPARAM);
 			virtual CODE EDESTROY(const HWND, const UINT, const WPARAM, const LPARAM);
 			virtual CODE ECOMMAND(const HWND, const UINT, const WPARAM, const LPARAM);
-			virtual CODE EMOUSE(const HWND, const UINT, const WPARAM, const LPARAM);
+			virtual CODE EMCOMMAND(const HWND, const UINT, const WPARAM, const LPARAM);
+			virtual CODE EMMOVE(const HWND, const UINT, const WPARAM, const LPARAM);
 			virtual CODE EMDI(const HWND, const UINT, const WPARAM, const LPARAM);
 			virtual CODE ENCDESTROY(const HWND, const UINT, const WPARAM, const LPARAM);
 			virtual CODE ENCHITTEST(const HWND, const UINT, const WPARAM, const LPARAM);
@@ -379,11 +588,16 @@ namespace AZ{
 			virtual CODE EBKG(const HWND, const UINT, const WPARAM, const LPARAM);
 			virtual CODE ERELATIVESIZE(const HWND, const UINT, const WPARAM, const LPARAM);
 			virtual CODE ECLICK(const HWND, const UINT, const WPARAM, const LPARAM);
+			virtual CODE ENCCLICK(const HWND, const UINT, const WPARAM, const LPARAM);
 			virtual CODE EDCLICK(const HWND, const UINT, const WPARAM, const LPARAM);
+			virtual CODE ENCDCLICK(const HWND, const UINT, const WPARAM, const LPARAM);
 			virtual CODE EMDOWN(const HWND, const UINT, const WPARAM, const LPARAM);
+			virtual CODE ENCMDOWN(const HWND, const UINT, const WPARAM, const LPARAM);
 			virtual CODE EMUP(const HWND, const UINT, const WPARAM, const LPARAM);
+			virtual CODE ENCMUP(const HWND, const UINT, const WPARAM, const LPARAM);
 			virtual CODE EHOLD(const HWND, const UINT, const WPARAM, const LPARAM);
 			virtual CODE EPAINT(const HWND, const UINT, const WPARAM, const LPARAM, HDC);
+			virtual CODE EMWHEEL(const HWND, const UINT, const WPARAM, const LPARAM);
 			LRESULT CALLBACK EBack(const HWND, const UINT, const WPARAM, const LPARAM);
 			
 			// ここら辺はきれいにしたい
@@ -399,7 +613,8 @@ namespace AZ{
 			CODE _ECLOSE(const HWND, const UINT, const WPARAM, const LPARAM);
 			CODE _EDESTROY(const HWND, const UINT, const WPARAM, const LPARAM);
 			CODE _ECOMMAND(const HWND, const UINT, const WPARAM, const LPARAM);
-			CODE _EMOUSE(const HWND, const UINT, const WPARAM, const LPARAM);
+			CODE _EMCOMMAND(const HWND, const UINT, const WPARAM, const LPARAM);
+			CODE _EMMOVE(const HWND, const UINT, const WPARAM, const LPARAM);
 			CODE _EMDI(const HWND, const UINT, const WPARAM, const LPARAM);
 			CODE _ENCDESTROY(const HWND, const UINT, const WPARAM, const LPARAM);
 			CODE _ENCHITTEST(const HWND, const UINT, const WPARAM, const LPARAM);
@@ -421,11 +636,16 @@ namespace AZ{
 			CODE _EBKG(const HWND, const UINT, const WPARAM, const LPARAM);
 			CODE _ERELATIVESIZE(const HWND, const UINT, const WPARAM, const LPARAM);
 			CODE _ECLICK(const HWND, const UINT, const WPARAM, const LPARAM);
+			CODE _ENCCLICK(const HWND, const UINT, const WPARAM, const LPARAM);
 			CODE _EDCLICK(const HWND, const UINT, const WPARAM, const LPARAM);
+			CODE _ENCDCLICK(const HWND, const UINT, const WPARAM, const LPARAM);
 			CODE _EMDOWN(const HWND, const UINT, const WPARAM, const LPARAM);
+			CODE _ENCMDOWN(const HWND, const UINT, const WPARAM, const LPARAM);
 			CODE _EMUP(const HWND, const UINT, const WPARAM, const LPARAM);
+			CODE _ENCMUP(const HWND, const UINT, const WPARAM, const LPARAM);
 			CODE _EHOLD(const HWND, const UINT, const WPARAM, const LPARAM);
 			CODE _EPAINT(const HWND, const UINT, const WPARAM, const LPARAM);
+			CODE _EMWHEEL(const HWND, const UINT, const WPARAM, const LPARAM);
 			//std::vector< void(*)(HDC) > Layer;
 			
 			
@@ -469,6 +689,8 @@ namespace AZ{
 				void countup();
 				void Lockfps(int);
 			} _fpstimer;
+			
+			
 		//デバッグ
 		public:
 			void Print();

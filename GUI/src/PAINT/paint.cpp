@@ -4,6 +4,84 @@ namespace AZ{
 	namespace GUI{
 		namespace PAINT{
 			
+			/*
+			HDCBUFF::HDCBUFF() : hmem(nullptr), hbm(nullptr){}
+			HDCBUFF::HDCBUFF(HDC hdc, std::array<int, 2> size){
+				hmem = CreateCompatibleDC(hdc);
+				hbm = CreateCompatibleBitmap(hdc, size[0], size[1]);
+				SelectObject(hmem, hbm);
+				
+				// set pen, brush
+				//SelectObject(hmem, );
+				//SelectObject(hmem, );
+			}
+			
+			HDCBUFF::HDCBUFF(const HDCBUFF& other) : 
+			hmem(other.hmem), hbm(other.hbm){
+				other.hmem = nullptr;
+				other.hbm = nullptr;
+			}
+			
+			// move cnonstructor
+			HDCBUFF::HDCBUFF(HDCBUFF&& other) : 
+			hmem(other.hmem), hbm(other.hbm){
+				other.hmem = nullptr;
+				other.hbm = nullptr;
+			}
+			HDCBUFF::~HDCBUFF(){
+				#ifdef AZ_DEBUG
+				DEBUG::DebugConsole::Get_Instance().Log("Delete HDC & HBITMAP");
+				#endif
+				if(hmem != nullptr) DeleteDC(hmem);
+				if(hbm != nullptr) DeleteObject(hbm);
+			}
+			
+			HDC GetHMEM(){
+				return hmem;
+			}
+			HBITMAP GetHBM(){
+				return hbm;
+			}
+			
+			
+			HBITMAP& operator=(HBITMAP&& other){
+				if(this != &other){
+					if(hmem != nullptr) DeleteDC(hmem);
+					if(hbm != nullptr) DeleteObject(hbm);
+					
+					hmem = other.hmem;
+					hbm = other.hbm;
+					
+					other.hmem = nullptr;
+					other.hbm = nullptr;
+				}
+				
+				return *this;
+			}
+			
+			HBITMAP& operator=(const HBITMAP& other){
+				if(hmem != nullptr) DeleteDC(hmem);
+				if(hbm != nullptr) DeleteObject(hbm);
+				
+				hmem = other.hmem;
+				hbm = other.hbm;
+				
+				other.hmem = nullptr;
+				other.hbm = nullptr;
+			}
+			
+			void HDCBUFF::SetHMEM(HDC hMem){
+				SelectObject(hMem, hbm);
+				DeleteDC(hmem);
+				hmem = hMem;
+			}
+			void HDCBUFF::SetHBM(HBITMAP hBm){
+				DeleteObject(SelectObject(hmem, hbm));
+				hbm = hBm;
+			}
+			*/
+			
+			
 			RGB32::RGB32() : B(0), G(0), R(0), A(0){};
 			bool RGB32::isBlack(){
 				if(B == 0x00 && G == 0x00 && R == 0x00) return true;
