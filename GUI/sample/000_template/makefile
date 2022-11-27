@@ -1,0 +1,21 @@
+
+
+
+
+.PHONY: Build
+Build:
+	g++ -c main.cpp
+	g++ main.cpp -o main -mwindows -L./ -lAZALEA -lwinmm -O3
+
+.PHONY: debug
+debug:
+	g++ -c main.cpp -DAZ_DEBUG=1
+	g++ -g -O0 -o main main.o -mwindows -L./ -lAZALEAD -lazdebug64 -DAZ_DEBUG=1
+
+.PHONY: INIT
+INIT:
+	copy ..\sample\000_template .\
+
+.PHONY: UPDATE
+UPDATE:
+	update.bat

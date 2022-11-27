@@ -1,0 +1,1 @@
+@echo F | xcopy /Y ..\000_template\AZ* .\
