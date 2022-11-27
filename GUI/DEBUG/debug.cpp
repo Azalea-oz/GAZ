@@ -1,4 +1,28 @@
 #include"debug.hpp"
+#include"util.hpp"
+
+#define DGLOG(x) DEBUG::DebugConsole::Get_Instance().Log(x)
+#define DGDIALOG(x) DEBUG::error_dialog(x);
+
+
+
+
+
+BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD dwReason, LPVOID lpvReserved){
+	
+	switch(dwReason){
+	case DLL_PROCESS_ATTACH:	//アタッチ時
+		//DEBUG::DebugConsole::Get_Instance().Init();
+		
+		break;
+	case DLL_PROCESS_DETACH:	//デタッチ時
+		//unhook
+		//UnhookWindowsHookEx();
+		break;
+	}
+	
+	return true;
+}
 
 
 namespace DEBUG{
@@ -42,184 +66,427 @@ namespace DEBUG{
 		MessageBox(NULL, TEXT(x), TEXT("DEBUG"), MB_OK);
 	}
 	
-	DebugConsole::DebugConsole() : DEBUG_TIME(false), Debug_Line(1){UseFlag = false;}
-	DebugConsole::~DebugConsole(){if(UseFlag) FreeConsole();}
+	DebugConsole::DebugConsole() : DEBUG_TIME(false), Debug_Line(1), UseHelp(true), cLineNum(256){UseFlag = false;}
+	DebugConsole::~DebugConsole(){
+		//std::cout << "Close console" << std::endl;
+		std::wcout << L"Close console" << std::endl;
+		if(FileName.length()){
+			if(WideMode){
+				wfs.open(DEBUG::UTIL::WStoS(WFileName), std::ios_base::out | std::ios_base::app);
+				if(wfs){
+					LogVec.push_back("\n");
+					for(auto Str : LogVecW){
+						//std::cout << Str;
+						wfs << Str;
+					}
+					
+					wfs.close();
+					Log(ID_NONE, std::wstring(L"Log File [") + WFileName + L"]");
+				} else{
+					std::wcout << L"Can not open [" << WFileName << L"]" << std::endl;
+				}
+			} else{
+				fs.open(FileName, std::ios_base::out | std::ios_base::app);
+				if(fs){
+					LogVec.push_back("\n");
+					for(auto Str : LogVec){
+						//std::cout << Str;
+						fs << Str;
+					}
+					
+					fs.close();
+				} else{
+					std::cout << "Can not open [" << FileName << "]" << std::endl;
+				}
+			}
+		}
+		
+		_close(hConsole);
+		FreeConsole();
+	}
 	void DebugConsole::SetAttr(WORD attr){if(UseFlag) SetConsoleTextAttribute(hout, attr);}
 	void DebugConsole::UseTime(){if(UseFlag) Get_Instance().DEBUG_TIME = true;}
 	
 	void DebugConsole::Init(){
+		//DEBUG::error_dialog(NULL, "Init");
 		std::string tmp;
 		if(!UseFlag){
+			WideMode = true;
+			
 			AllocConsole();
-			hout = GetStdHandle(STD_OUTPUT_HANDLE);
+			SetConsoleTitle("DEBUG Console");
+			hConsole = _open_osfhandle((intptr_t)GetStdHandle(STD_OUTPUT_HANDLE), _O_TEXT);
 			SetConsoleCtrlHandler(HandlerRoutine, TRUE);
 			HMENU menu = GetSystemMenu(GetConsoleWindow(), FALSE);
 			RemoveMenu(menu, SC_CLOSE, MF_BYCOMMAND);
-			freopen("CONOUT$", "w", stdout);
-			freopen("CONIN$", "r", stdin);
+			*stdout = *_fdopen(hConsole, "w");
+			setvbuf(stdout, NULL, _IONBF, 0);
 			UseFlag = true;
-			Log("Wellcome Debug Mode");
+			hout = GetStdHandle(STD_OUTPUT_HANDLE);
+			SetAttr(FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
+			Log(ID_NONE, "Wellcome Debug Mode");
+			if(UseHelp)Help();
+			DisplayLog();
 		} else{
-			Log("Console was opend");
+			Log(ID_WARNING, "Console was opend");
 		}
 	}
-	template<typename T>
-	void DebugConsole::Log(T x){
-		if(UseFlag){
-			if(DEBUG_TIME) Time::NowTime();
-			DebugLogLine();
-			std::ostringstream oss;
-			oss.setf(std::ios::left);
-			oss.fill(' ');
-			oss.width(30);
-			oss << x;
-			std::string tmp;
-			tmp += oss.str();
-			tmp += '\n';
-			WriteConsole(
-				GetStdHandle(STD_OUTPUT_HANDLE), 
-				tmp.c_str(), tmp.length(), &NumOfWritten, NULL);
+	void DebugConsole::Init(std::string filename){
+		//DEBUG::error_dialog(NULL, "Init");
+		std::string tmp;
+		if(!UseFlag){
+			WideMode = false;
+			FileName = filename;
+			
+			AllocConsole();
+			SetConsoleTitle("DEBUG Console");
+			hConsole = _open_osfhandle((intptr_t)GetStdHandle(STD_OUTPUT_HANDLE), _O_TEXT);
+			SetConsoleCtrlHandler(HandlerRoutine, TRUE);
+			HMENU menu = GetSystemMenu(GetConsoleWindow(), FALSE);
+			RemoveMenu(menu, SC_CLOSE, MF_BYCOMMAND);
+			*stdout = *_fdopen(hConsole, "w");
+			setvbuf(stdout, NULL, _IONBF, 0);
+			UseFlag = true;
+			hout = GetStdHandle(STD_OUTPUT_HANDLE);
+			SetAttr(FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
+			Log(ID_NONE, "Wellcome Debug Mode");
+			if(UseHelp)Help();
+			
+			fs.open(FileName, std::ios_base::in);
+			if(fs.is_open()){
+				ReadLogFile();
+				fs.close();
+			} else{
+				fs.open(FileName, std::ios_base::out);
+				fs.close();
+			}
+			Log(ID_NONE, std::string("Log File [") + FileName + "]");
+			DisplayLog();
+		} else{
+			Log(ID_WARNING, "Console was opend");
 		}
-		
 	}
-
+	void DebugConsole::Init(std::wstring filename){
+		//DEBUG::error_dialog(NULL, "Init");
+		std::string tmp;
+		if(!UseFlag){
+			WideMode = true;
+			WFileName = filename;
+			
+			AllocConsole();
+			SetConsoleTitle("DEBUG Console");
+			hConsole = _open_osfhandle((intptr_t)GetStdHandle(STD_OUTPUT_HANDLE), _O_TEXT);
+			SetConsoleCtrlHandler(HandlerRoutine, TRUE);
+			HMENU menu = GetSystemMenu(GetConsoleWindow(), FALSE);
+			RemoveMenu(menu, SC_CLOSE, MF_BYCOMMAND);
+			*stdout = *_fdopen(hConsole, "w");
+			setvbuf(stdout, NULL, _IONBF, 0);
+			UseFlag = true;
+			hout = GetStdHandle(STD_OUTPUT_HANDLE);
+			SetAttr(FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
+			Log(ID_NONE, "Wellcome Debug Mode");
+			if(UseHelp)Help();
+			
+			wfs.open(UTIL::WStoS(WFileName), std::ios_base::in);
+			if(wfs.is_open()){
+				ReadLogFile();
+				wfs.close();
+			} else{
+				wfs.open(UTIL::WStoS(WFileName), std::ios_base::out);
+				wfs.close();
+			}
+			Log(ID_NONE, std::wstring(L"Log File [") + WFileName + L"]");
+			DisplayLog();
+		} else{
+			Log(ID_WARNING, "Console was opend");
+		}
+	}
+	void DebugConsole::ReadLogFile(){
+		if(WideMode){
+			std::wstring buffer;
+			while(!wfs.eof()){
+				std::getline(wfs, buffer);
+				buffer += L"\n";
+				LogVecW.push_back(buffer);
+				if(cLineNum < LogVec.size()) LogVec.erase(LogVec.begin() + 0);
+			}
+			LogVec.pop_back();
+			LogVec.pop_back();
+			Debug_Line = std::stoi(LogVec.back().substr(LogVecW.back().find_first_of(L"[") + 1, LogVecW.back().find_first_of(L"]") - 1).c_str()) + 1;
+		} else{
+			std::string buffer;
+			while(!fs.eof()){
+				std::getline(fs, buffer);
+				buffer += "\n";
+				LogVec.push_back(buffer);
+				if(cLineNum < LogVec.size()) LogVec.erase(LogVec.begin() + 0);
+			}
+			LogVec.pop_back();
+			LogVec.pop_back();
+			Debug_Line = std::atoi(LogVec.back().substr(LogVec.back().find_first_of("[") + 1, LogVec.back().find_first_of("]") - 1).c_str()) + 1;
+		}
+	}
+	void DebugConsole::DisplayLog(){
+		if(LogVec.size() != 0) for(auto Str : LogVec) std::cout << Str;
+	}
 	
-	template<> void DebugConsole::Log<std::string>(std::string x){
+	std::string DebugConsole::StringShap(BYTE type, std::string str){
+		if(DEBUG_TIME) Time::NowTime();
+		DebugLogLine();
+		SetCodeColor(type);
+		std::ostringstream oss;
+		oss.setf(std::ios::left);
+		oss.fill(' ');
+		oss.width(30);
+		oss << str;
+		return oss.str();
+	}
+	std::wstring DebugConsole::WStringShap(BYTE type, std::wstring str){
+		if(DEBUG_TIME) Time::NowTime();
+		DebugLogLine();
+		SetCodeColor(type);
+		std::wostringstream oss;
+		oss.setf(std::ios::left);
+		oss.fill(L' ');
+		oss.width(30);
+		oss << str;
+		return oss.str();
+	}
+	
+	void DebugConsole::Log(BYTE type, void *x){
 		if(UseFlag){
-			if(DEBUG_TIME) Time::NowTime();
-			DebugLogLine();
-			std::ostringstream oss;
-			oss.setf(std::ios::left);
-			oss.fill(' ');
-			oss.width(30);
-			oss << x;
-			std::string tmp;
-			tmp += oss.str();
-			tmp += '\n';
-			WriteConsole(
-				GetStdHandle(STD_OUTPUT_HANDLE), 
-				tmp.c_str(), tmp.length(), &NumOfWritten, NULL);
+			if(WideMode){
+				std::wstring tmp = std::to_wstring((long long)x);
+				tmp = WStringShap(type, tmp);
+				tmp += L'\n';
+				LogVecW.push_back(tmp);
+				WriteConsoleW(
+					hout, tmp.c_str(), tmp.length(), &NumOfWritten, NULL);
+				SetAttr(FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
+			} else{
+				std::string tmp = std::to_string((long long)x);
+				tmp = StringShap(type, tmp);
+				tmp += '\n';
+				LogVec.push_back(tmp);
+				WriteConsole(
+					hout, tmp.c_str(), tmp.length(), &NumOfWritten, NULL);
+				SetAttr(FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
+			}
 		}
 	}
-	template<> void DebugConsole::Log<char *>(char *x){
+	void DebugConsole::Log(BYTE type, const char *x){
 		if(UseFlag){
-			if(DEBUG_TIME) Time::NowTime();
-			DebugLogLine();
-			std::ostringstream oss;
-			oss.setf(std::ios::left);
-			oss.fill(' ');
-			oss.width(30);
-			oss << x;
-			std::string tmp;
-			tmp += oss.str();
-			tmp += '\n';
-			WriteConsole(
-				GetStdHandle(STD_OUTPUT_HANDLE), 
-				tmp.c_str(), tmp.length(), &NumOfWritten, NULL);
+			if(WideMode){
+				std::wstring tmp = UTIL::StoWS(std::string(x));
+				tmp = WStringShap(type, tmp);
+				tmp += L'\n';
+				LogVecW.push_back(tmp);
+				WriteConsoleW(
+					hout, tmp.c_str(), tmp.length(), &NumOfWritten, NULL);
+				SetAttr(FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
+			} else{
+				std::string tmp = x;
+				tmp = StringShap(type, tmp);
+				tmp += '\n';
+				LogVec.push_back(tmp);
+				WriteConsole(
+					hout, tmp.c_str(), tmp.length(), &NumOfWritten, NULL);
+				SetAttr(FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
+			}
 		}
 	}
-	template<> void DebugConsole::Log<unsigned long>(unsigned long x){
+	
+	
+	void DebugConsole::Log(BYTE type, std::string x){
 		if(UseFlag){
-			if(DEBUG_TIME) Time::NowTime();
-			DebugLogLine();
-			std::ostringstream oss;
-			oss.setf(std::ios::left);
-			oss.fill(' ');
-			oss.width(30);
-			oss << x;
-			std::string tmp;
-			tmp += oss.str();
-			tmp += '\n';
-			WriteConsole(
-				GetStdHandle(STD_OUTPUT_HANDLE), 
-				tmp.c_str(), tmp.length(), &NumOfWritten, NULL);
+			if(WideMode){
+				std::wstring tmp = UTIL::StoWS(x);
+				tmp = WStringShap(type, tmp);
+				tmp += L'\n';
+				LogVecW.push_back(tmp);
+				WriteConsoleW(
+					hout, tmp.c_str(), tmp.length(), &NumOfWritten, NULL);
+				SetAttr(FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
+			} else{
+				std::string tmp = x;
+				tmp = StringShap(type, tmp);
+				tmp += '\n';
+				LogVec.push_back(tmp);
+				WriteConsole(
+					hout, tmp.c_str(), tmp.length(), &NumOfWritten, NULL);
+				SetAttr(FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
+			}
 		}
 	}
-	template<> void DebugConsole::Log<unsigned int>(unsigned int x){
+	void DebugConsole::Log(BYTE type, const wchar_t *x){
 		if(UseFlag){
-			if(DEBUG_TIME) Time::NowTime();
-			DebugLogLine();
-			std::ostringstream oss;
-			oss.setf(std::ios::left);
-			oss.fill(' ');
-			oss.width(30);
-			oss << x;
-			std::string tmp;
-			tmp += oss.str();
-			tmp += '\n';
-			WriteConsole(
-				GetStdHandle(STD_OUTPUT_HANDLE), 
-				tmp.c_str(), tmp.length(), &NumOfWritten, NULL);
+			if(WideMode){
+				std::wstring tmp = x;
+				tmp = WStringShap(type, tmp);
+				tmp += L'\n';
+				LogVecW.push_back(tmp);
+				WriteConsoleW(
+					hout, tmp.c_str(), tmp.length(), &NumOfWritten, NULL);
+				SetAttr(FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
+			} else{
+				std::string tmp = UTIL::WStoS(std::wstring(x));
+				tmp = StringShap(type, tmp);
+				tmp += '\n';
+				LogVec.push_back(tmp);
+				WriteConsole(
+					hout, tmp.c_str(), tmp.length(), &NumOfWritten, NULL);
+				SetAttr(FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
+			}
 		}
 	}
-	template<> void DebugConsole::Log<int>(int x){
+	void DebugConsole::Log(BYTE type, std::wstring x){
 		if(UseFlag){
-			if(DEBUG_TIME) Time::NowTime();
-			DebugLogLine();
-			std::ostringstream oss;
-			oss.setf(std::ios::left);
-			oss.fill(' ');
-			oss.width(30);
-			oss << x;
-			std::string tmp;
-			tmp += oss.str();
-			tmp += '\n';
-			WriteConsole(
-				GetStdHandle(STD_OUTPUT_HANDLE), 
-				tmp.c_str(), tmp.length(), &NumOfWritten, NULL);
+			if(WideMode){
+				std::wstring tmp = x;
+				tmp = WStringShap(type, tmp);
+				tmp += L'\n';
+				LogVecW.push_back(tmp);
+				WriteConsoleW(
+					hout, tmp.c_str(), tmp.length(), &NumOfWritten, NULL);
+				SetAttr(FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
+			} else{
+				std::string tmp = UTIL::WStoS(x);
+				tmp = StringShap(type, tmp);
+				tmp += '\n';
+				LogVec.push_back(tmp);
+				WriteConsole(
+					hout, tmp.c_str(), tmp.length(), &NumOfWritten, NULL);
+				SetAttr(FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
+			}
 		}
 	}
-	template<> void DebugConsole::Log<void*>(void* x){
+	void DebugConsole::Log(BYTE type, unsigned x){
 		if(UseFlag){
-			if(DEBUG_TIME) Time::NowTime();
-			DebugLogLine();
-			std::ostringstream oss;
-			oss.setf(std::ios::left);
-			oss.fill(' ');
-			oss.width(30);
-			oss << x;
-			std::string tmp;
-			tmp += oss.str();
-			tmp += '\n';
-			WriteConsole(
-				GetStdHandle(STD_OUTPUT_HANDLE), 
-				tmp.c_str(), tmp.length(), &NumOfWritten, NULL);
+			if(WideMode){
+				std::wstring tmp = std::to_wstring(x);
+				tmp = WStringShap(type, tmp);
+				tmp += L'\n';
+				LogVecW.push_back(tmp);
+				WriteConsoleW(
+					hout, tmp.c_str(), tmp.length(), &NumOfWritten, NULL);
+				SetAttr(FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
+			} else{
+				std::string tmp = std::to_string(x);
+				tmp = StringShap(type, tmp);
+				tmp += '\n';
+				LogVec.push_back(tmp);
+				WriteConsole(
+					hout, tmp.c_str(), tmp.length(), &NumOfWritten, NULL);
+				SetAttr(FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
+			}
 		}
 	}
-	template<> void DebugConsole::Log<std::wstring>(std::wstring x){
+	void DebugConsole::Log(BYTE type, unsigned long x){
 		if(UseFlag){
-			if(DEBUG_TIME) Time::NowTime();
-			DebugLogLine();
-			std::wostringstream oss;
-			oss.setf(std::ios::left);
-			oss.fill(' ');
-			oss.width(30);
-			oss << x;
-			std::wstring tmp;
-			tmp += oss.str();
-			tmp += L'\n';
-			WriteConsoleW(
-				GetStdHandle(STD_OUTPUT_HANDLE), 
-				tmp.c_str(), tmp.size(), &NumOfWritten, NULL);
+			if(WideMode){
+				std::wstring tmp = std::to_wstring(x);
+				tmp = WStringShap(type, tmp);
+				tmp += L'\n';
+				LogVecW.push_back(tmp);
+				WriteConsoleW(
+					hout, tmp.c_str(), tmp.length(), &NumOfWritten, NULL);
+				SetAttr(FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
+			} else{
+				std::string tmp = std::to_string(x);
+				tmp = StringShap(type, tmp);
+				tmp += '\n';
+				LogVec.push_back(tmp);
+				WriteConsole(
+					hout, tmp.c_str(), tmp.length(), &NumOfWritten, NULL);
+				SetAttr(FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
+			}
 		}
 	}
-	template<> void DebugConsole::Log<wchar_t const *>(wchar_t const *x){
+	void DebugConsole::Log(BYTE type, unsigned long long x){
 		if(UseFlag){
-			if(DEBUG_TIME) Time::NowTime();
-			DebugLogLine();
-			std::wostringstream oss;
-			oss.setf(std::ios::left);
-			oss.fill(' ');
-			oss.width(30);
-			oss << x;
-			std::wstring tmp;
-			tmp += oss.str();
-			tmp += L'\n';
-			WriteConsoleW(
-				GetStdHandle(STD_OUTPUT_HANDLE), 
-				tmp.c_str(), tmp.size(), &NumOfWritten, NULL);
+			if(WideMode){
+				std::wstring tmp = std::to_wstring(x);
+				tmp = WStringShap(type, tmp);
+				tmp += L'\n';
+				LogVecW.push_back(tmp);
+				WriteConsoleW(
+					hout, tmp.c_str(), tmp.length(), &NumOfWritten, NULL);
+				SetAttr(FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
+			} else{
+				std::string tmp = std::to_string(x);
+				tmp = StringShap(type, tmp);
+				tmp += '\n';
+				LogVec.push_back(tmp);
+				WriteConsole(
+					hout, tmp.c_str(), tmp.length(), &NumOfWritten, NULL);
+				SetAttr(FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
+			}
 		}
 	}
+	void DebugConsole::Log(BYTE type, signed x){
+		if(UseFlag){
+			if(WideMode){
+				std::wstring tmp = std::to_wstring(x);
+				tmp = WStringShap(type, tmp);
+				tmp += L'\n';
+				LogVecW.push_back(tmp);
+				WriteConsoleW(
+					hout, tmp.c_str(), tmp.length(), &NumOfWritten, NULL);
+				SetAttr(FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
+			} else{
+				std::string tmp = std::to_string(x);
+				tmp = StringShap(type, tmp);
+				tmp += '\n';
+				LogVec.push_back(tmp);
+				WriteConsole(
+					hout, tmp.c_str(), tmp.length(), &NumOfWritten, NULL);
+				SetAttr(FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
+			}
+		}
+	}
+	void DebugConsole::Log(BYTE type, signed long x){
+		if(UseFlag){
+			if(WideMode){
+				std::wstring tmp = std::to_wstring(x);
+				tmp = WStringShap(type, tmp);
+				tmp += L'\n';
+				LogVecW.push_back(tmp);
+				WriteConsoleW(
+					hout, tmp.c_str(), tmp.length(), &NumOfWritten, NULL);
+				SetAttr(FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
+			} else{
+				std::string tmp = std::to_string(x);
+				tmp = StringShap(type, tmp);
+				tmp += '\n';
+				LogVec.push_back(tmp);
+				WriteConsole(
+					hout, tmp.c_str(), tmp.length(), &NumOfWritten, NULL);
+				SetAttr(FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
+			}
+		}
+	}
+	void DebugConsole::Log(BYTE type, signed long long x){
+		if(UseFlag){
+			if(WideMode){
+				std::wstring tmp = std::to_wstring(x);
+				tmp = WStringShap(type, tmp);
+				tmp += L'\n';
+				LogVecW.push_back(tmp);
+				WriteConsoleW(
+					hout, tmp.c_str(), tmp.length(), &NumOfWritten, NULL);
+				SetAttr(FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
+			} else{
+				std::string tmp = std::to_string(x);
+				tmp = StringShap(type, tmp);
+				tmp += '\n';
+				LogVec.push_back(tmp);
+				WriteConsole(
+					hout, tmp.c_str(), tmp.length(), &NumOfWritten, NULL);
+				SetAttr(FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
+			}
+		}
+	}
+	
 	
 	template<typename T>
 	void DebugConsole::CmdLog(T cmd, T msg){
@@ -231,7 +498,7 @@ namespace DEBUG{
 		}
 	}
 	
-	void DebugConsole:: DebugLogLine(){
+	void DebugConsole::DebugLogLine(){
 		if(UseFlag){
 			std::ostringstream oss;
 			oss.setf(std::ios::right);
@@ -242,11 +509,38 @@ namespace DEBUG{
 			tmp += oss.str();
 			tmp += "]";
 			WriteConsole(
-				GetStdHandle(STD_OUTPUT_HANDLE), 
-				tmp.c_str(), tmp.length(), &NumOfWritten, NULL);
+				hout, tmp.c_str(), tmp.length(), &NumOfWritten, NULL);
 			Debug_Line++;
 		}
 	}
+	void DebugConsole::SetCodeColor(BYTE type){
+		switch(type){
+ 		case ID_NONE:
+			SetAttr(FOREGROUND_WHITE); break;
+		case ID_SAFE:
+			SetAttr(FOREGROUND_BLUE_H);
+			std::cout << "SAFE : ";
+			break;
+		case ID_WARNING:
+			SetAttr(FOREGROUND_YELLOW_H);
+			std::cout << "WARN : ";
+			break;
+		case ID_ERROR:
+			SetAttr(FOREGROUND_RED_H);
+			std::cout << "ERROR : ";
+			break;
+		}
+	}
+	void DebugConsole::Help(){
+		Log(ID_NONE, L"NONE : ID_NONE outputs a log without warning.");
+		Log(ID_SAFE, L"ID_SAFE outputs a log of normal operation in light blue.");
+		Log(ID_WARNING, L"ID_WARNING outputs a log of warning operation in yellow.");
+		Log(ID_ERROR, L"ID_ERROR outputs a log of critical error in red.");
+	}
+	void DebugConsole::SetHelp(bool f){
+		UseHelp = f;
+	}
+
 }
 
 namespace Time{
